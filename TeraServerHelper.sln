@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34024.191
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeraCore", "TeraCore\TeraCore.csproj", "{814AB8CA-6EA4-438A-96DC-93896C2BBF3A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetworkSniffer", "NetworkSniffer\NetworkSniffer.csproj", "{6C0F0DF7-7E2E-4212-9C7F-F12A3C07D11E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeraSniffing", "TeraSniffer\TeraSniffing.csproj", "{E865BFAC-73EA-4807-AEFC-F8015E322756}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeraPartyMonitor", "TeraPartyMonitor\TeraPartyMonitor.csproj", "{607E1CA9-4A2E-4E87-9921-DA515AA50A23}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{814AB8CA-6EA4-438A-96DC-93896C2BBF3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{814AB8CA-6EA4-438A-96DC-93896C2BBF3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{814AB8CA-6EA4-438A-96DC-93896C2BBF3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{814AB8CA-6EA4-438A-96DC-93896C2BBF3A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C0F0DF7-7E2E-4212-9C7F-F12A3C07D11E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C0F0DF7-7E2E-4212-9C7F-F12A3C07D11E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C0F0DF7-7E2E-4212-9C7F-F12A3C07D11E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C0F0DF7-7E2E-4212-9C7F-F12A3C07D11E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E865BFAC-73EA-4807-AEFC-F8015E322756}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E865BFAC-73EA-4807-AEFC-F8015E322756}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E865BFAC-73EA-4807-AEFC-F8015E322756}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E865BFAC-73EA-4807-AEFC-F8015E322756}.Release|Any CPU.Build.0 = Release|Any CPU
+		{607E1CA9-4A2E-4E87-9921-DA515AA50A23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{607E1CA9-4A2E-4E87-9921-DA515AA50A23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{607E1CA9-4A2E-4E87-9921-DA515AA50A23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{607E1CA9-4A2E-4E87-9921-DA515AA50A23}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3A7B0CAB-19A8-4775-B537-4197B77689F6}
+	EndGlobalSection
+EndGlobal
