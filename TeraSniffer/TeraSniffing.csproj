@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="TeraSniffer2.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\NetworkSniffer\NetworkSniffer.csproj" />
     <ProjectReference Include="..\TeraCore\TeraCore.csproj" />
   </ItemGroup>
