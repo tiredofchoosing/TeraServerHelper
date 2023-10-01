@@ -49,7 +49,7 @@ namespace TeraCore.Game
                 {"C_REGISTER_PARTY_INFO", typeof(C_REGISTER_PARTY_INFO)},
                 {"C_UNREGISTER_PARTY_INFO", typeof(C_UNREGISTER_PARTY_INFO)},
                 {"S_RETURN_TO_LOBBY", typeof(S_RETURN_TO_LOBBY)},
-                {"S_EXIT", typeof(S_EXIT)},
+                //{"S_EXIT", typeof(S_EXIT)},
             };
     }
 }

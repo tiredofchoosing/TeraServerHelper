@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using TeraCore.Game.Structures;
+﻿using TeraCore.Game.Structures;
 using TeraCore.Game;
 
 namespace TeraPartyMonitor.Structures
