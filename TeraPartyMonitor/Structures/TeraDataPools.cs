@@ -1,5 +1,6 @@
 ﻿using TeraCore.Game.Structures;
 using TeraCore.Game;
+using System.ComponentModel;
 
 namespace TeraPartyMonitor.Structures
 {
@@ -23,14 +24,61 @@ namespace TeraPartyMonitor.Structures
 
             ClientCollection.ItemRemoved += ClientCollection_ItemRemoved;
             PlayerCollection.ItemRemoved += PlayerCollection_ItemRemoved;
+            PartyCollection.ItemRemoved += PartyCollection_ItemRemoved;
+            PartyMatchingCollection.ItemRemoved += PartyMatchingCollection_ItemRemoved;
         }
 
         #region Event Handlers
 
+        private void PartyMatchingCollection_ItemRemoved(PartyMatching partyMatching)
+        {
+            //foreach (var player in partyMatching.LinkedParty.Players)
+            //{
+            //    switch (partyMatching.MatchingType)
+            //    {
+            //        case MatchingTypes.Dungeon:
+            //            player.DungeonMatchingProfile = null;
+            //            break;
+            //        case MatchingTypes.Battleground:
+            //            player.BattlegroundMatchingProfile = null;
+            //            break;
+            //        default:
+            //            throw new MatchingTypesInvalidEnumArgumentException(partyMatching.MatchingType);
+            //    }
+            //}
+        }
+
+        private void PartyCollection_ItemRemoved(Party party)
+        {
+            var partyInfo = GetPartyInfoByParty(party);
+            if (partyInfo != null)
+            {
+                PartyInfoCollection.Remove(partyInfo);
+            }
+
+            //var dungeonMatching = GetPartyMatchingByParty(party, MatchingTypes.Dungeon);
+            //if (dungeonMatching != null)
+            //{
+            //    PartyMatchingCollection.Remove(dungeonMatching);
+            //}
+
+            //var battlegroundMatching = GetPartyMatchingByParty(party, MatchingTypes.Battleground);
+            //if (battlegroundMatching != null)
+            //{
+            //    PartyMatchingCollection.Remove(battlegroundMatching);
+            //}
+        }
+
         private void PlayerCollection_ItemRemoved(Player player)
         {
-            if (GetPartyByPlayer(player) == null)
+            var party = GetPartyByPlayer(player);
+            if (party == null)
                 return;
+
+            if (party.Players.Count > 1)
+                return;
+
+            PartyCollection.Remove(party);
 
             //CachedPlayers.Add(player);
         }
@@ -102,18 +150,49 @@ namespace TeraPartyMonitor.Structures
             }
         }
 
-        public PartyMatching? GetPartyMatchingByParty(Party party)
+        //public PartyMatching? GetPartyMatchingByParty(Party party, MatchingTypes type)
+        //{
+        //    if (party == null)
+        //        throw new ArgumentNullException(nameof(party));
+
+        //    try
+        //    {
+        //        return PartyMatchingCollection.SingleOrDefault(p => p.LinkedParty.Equals(party) && p.MatchingType == type);
+        //    }
+        //    catch
+        //    {
+        //        throw new Exception($"Party ({party}) has more than one PartyMatching ({type})");
+        //    }
+        //}
+
+        public PartyMatching? GetPartyMatchingByPlayer(Player player, MatchingTypes type)
         {
-            if (party == null)
-                throw new ArgumentNullException(nameof(party));
+            if (player == null)
+                throw new ArgumentNullException(nameof(player));
 
             try
             {
-                return PartyMatchingCollection.SingleOrDefault(p => p.Party.Equals(party));
+                return PartyMatchingCollection.SingleOrDefault(pm => pm.MatchingType == type &&
+                    pm.MatchingProfiles.Any(prof => prof.LinkedPlayer.Equals(player)));
             }
             catch
             {
-                throw new Exception($"Party ({party}) has more than one PartyMatching");
+                throw new Exception($"Player ({player}) is in more than one PartyMatching ({type})");
+            }
+        }
+
+        public Player? GetPlayerByName(string name)
+        {
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            try
+            {
+                return PlayerCollection.SingleOrDefault(p => p.Name.Equals(name));
+            }
+            catch
+            {
+                throw new Exception($"There are more than one player with the same name: {name}");
             }
         }
 

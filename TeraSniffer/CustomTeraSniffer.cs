@@ -26,7 +26,7 @@ namespace TeraSniffing
         public CustomTeraSniffer(CustomServer server)
         {
             _server = server;
-            var filter = $"tcp and host {server.Ip} and port {server.Port}";
+            var filter = $"tcp and host {server.EndPoint.Address} and port {server.EndPoint.Port}";
 
             _ipSniffer = new IpSnifferWinPcap(filter);
             _ipSniffer.Warning += OnWarning;

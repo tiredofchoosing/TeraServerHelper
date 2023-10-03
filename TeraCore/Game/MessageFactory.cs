@@ -44,11 +44,14 @@ namespace TeraCore.Game
 
         private static readonly Dictionary<string, Type> OpcodeNameToType = new Dictionary<string, Type>
             {
-                {"S_LOGIN", typeof(LoginServerMessage)},
-                {"S_CHANGE_EVENT_MATCHING_STATE", typeof(S_CHANGE_EVENT_MATCHING_STATE)},
-                {"C_REGISTER_PARTY_INFO", typeof(C_REGISTER_PARTY_INFO)},
-                {"C_UNREGISTER_PARTY_INFO", typeof(C_UNREGISTER_PARTY_INFO)},
-                {"S_RETURN_TO_LOBBY", typeof(S_RETURN_TO_LOBBY)},
+                {"S_LOGIN", typeof(SLoginMessage)},
+                {"S_RETURN_TO_LOBBY", typeof(SReturnToLobbyMessage)},
+                {"S_ADD_INTER_PARTY_MATCH_POOL", typeof(SAddInterPartyMatchPoolMessage)},
+                {"S_DEL_INTER_PARTY_MATCH_POOL", typeof(SDelInterPartyMatchPoolMessage)},
+                {"S_MODIFY_INTER_PARTY_MATCH_POOL", typeof(SModifyInterPartyMatchPoolMessage)},
+
+                {"C_REGISTER_PARTY_INFO", typeof(CRegisterPartyInfoMessage)},
+                {"C_UNREGISTER_PARTY_INFO", typeof(CUnregisterPartyInfoMessage)},
                 //{"S_EXIT", typeof(S_EXIT)},
             };
     }

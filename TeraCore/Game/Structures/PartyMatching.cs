@@ -1,14 +1,17 @@
-﻿namespace TeraCore.Game.Structures
+﻿using System.ComponentModel;
+
+namespace TeraCore.Game.Structures
 {
     public class PartyMatching
     {
-        public Party Party { get; init; }
-        public IList<Dungeon> Dungeons { get; init; }
-        
-        public PartyMatching(Party party, IList<Dungeon> dungeons)
+        public IList<MatchingProfile> MatchingProfiles { get; set; }
+        public IList<MatchingInstance> Instances { get; init; }
+        public MatchingTypes MatchingType { get; init; }
+        public PartyMatching(IList<MatchingProfile> profiles, IList<MatchingInstance> instances, MatchingTypes type)
         {
-            Party = party;
-            Dungeons = dungeons;
+            MatchingProfiles = profiles;
+            Instances = instances;
+            MatchingType = type;
         }
     }
 }

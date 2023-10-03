@@ -2,10 +2,10 @@
 {
     public class Player
     {
-        public uint PlayerId { get; private set; }
-        public string Name { get; private set; }
-        public byte Level { get; private set; }
-        public PlayerClass Class { get; private set; }
+        public uint PlayerId { get; init; }
+        public string Name { get; init; }
+        public byte Level { get; private set; } // TODO increase level
+        public PlayerClass Class { get; init; }
 
         public Player(uint playerId, string name, int level, PlayerClass playerClass)
         {

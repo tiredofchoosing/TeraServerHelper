@@ -11,7 +11,7 @@ namespace TeraPartyMonitor.MessageProcessor
 
         public override void Process()
         {
-            if (Message is S_RETURN_TO_LOBBY)
+            if (Message is SReturnToLobbyMessage)
             {
                 if (Client.CurrentPlayer != null)
                 {

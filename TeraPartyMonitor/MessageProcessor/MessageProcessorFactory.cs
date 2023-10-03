@@ -17,12 +17,14 @@ namespace TeraPartyMonitor.MessageProcessor
         {
             return message switch
             {
-                LoginServerMessage => new SLoginProcessor(message, client, _dataPools),
-                S_RETURN_TO_LOBBY => new SReturnToLobbyProcessor(message, client, _dataPools),
-                S_CHANGE_EVENT_MATCHING_STATE => new SChangeEventMatchingStateProcessor(message, client, _dataPools),
+                SLoginMessage => new SLoginProcessor(message, client, _dataPools),
+                SReturnToLobbyMessage => new SReturnToLobbyProcessor(message, client, _dataPools),
+                SAddInterPartyMatchPoolMessage => new SAddInterPartyMatchPoolProcessor(message, client, _dataPools),
+                SDelInterPartyMatchPoolMessage => new SDelInterPartyMatchPoolProcessor(message, client, _dataPools),
+                SModifyInterPartyMatchPoolMessage => new SModifyInterPartyMatchPoolProcessor(message, client, _dataPools),
 
-                C_REGISTER_PARTY_INFO => new CRegisterPartyInfoProcessor(message, client, _dataPools),
-                C_UNREGISTER_PARTY_INFO => new CUnregisterPartyInfoProcessor(message, client, _dataPools),
+                CRegisterPartyInfoMessage => new CRegisterPartyInfoProcessor(message, client, _dataPools),
+                CUnregisterPartyInfoMessage => new CUnregisterPartyInfoProcessor(message, client, _dataPools),
 
                 _ => throw new ArgumentException($"No mapping for message type: {message.GetType()}")
             }; ;

@@ -1,8 +1,8 @@
 ﻿namespace TeraCore.Game.Messages
 {
-    public class C_REGISTER_PARTY_INFO : ParsedMessage
+    public class CRegisterPartyInfoMessage : ParsedMessage
     {
-        internal C_REGISTER_PARTY_INFO(TeraMessageReader reader) : base(reader)
+        internal CRegisterPartyInfoMessage(TeraMessageReader reader) : base(reader)
         {
             var offset = reader.ReadUInt16();
             

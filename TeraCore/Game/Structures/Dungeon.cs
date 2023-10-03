@@ -1,20 +1,9 @@
 ﻿namespace TeraCore.Game.Structures
 {
-    public class Dungeon
+    public class Dungeon : MatchingInstance
     {
-        public uint DungeonId { get; init; }
-        public string Name { get; init; }
+        public Dungeon(uint id, string name, int lvl) : base(id, name, lvl) { }
 
-        public Dungeon(uint id, string name)
-        {
-            DungeonId = id;
-            Name = name;
-        }
-
-        public Dungeon(uint id)
-        {
-            DungeonId = id;
-            Name = "";
-        }
+        public Dungeon(uint id) : base(id) { }
     }
 }

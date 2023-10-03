@@ -2,9 +2,9 @@
 
 namespace TeraCore.Game.Messages
 {
-    public class LoginServerMessage : ParsedMessage
+    public class SLoginMessage : ParsedMessage
     {
-        internal LoginServerMessage(TeraMessageReader reader) : base(reader)
+        internal SLoginMessage(TeraMessageReader reader) : base(reader)
         {
             reader.Skip(4);
             int nameOffset = reader.ReadInt16();

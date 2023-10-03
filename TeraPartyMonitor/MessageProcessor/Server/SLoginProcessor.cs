@@ -11,7 +11,7 @@ namespace TeraPartyMonitor.MessageProcessor
 
         public override void Process()
         {
-            if (Message is LoginServerMessage m)
+            if (Message is SLoginMessage m)
             {
                 var player = new Player(m.PlayerId, m.Name, m.Level, m.Class);
                 DataPools.PlayerCollection.Add(player);

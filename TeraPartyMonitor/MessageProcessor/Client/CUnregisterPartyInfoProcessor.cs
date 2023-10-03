@@ -11,7 +11,7 @@ namespace TeraPartyMonitor.MessageProcessor
 
         public override void Process()
         {
-            if (Message is C_UNREGISTER_PARTY_INFO)
+            if (Message is CUnregisterPartyInfoMessage)
             {
                 var player = Client.CurrentPlayer;
                 var party = DataPools.GetPartyByPlayer(player);
