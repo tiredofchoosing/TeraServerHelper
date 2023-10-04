@@ -10,4 +10,13 @@
     <ProjectReference Include="..\NetworkSniffer\NetworkSniffer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Resources\battlegrounds.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\dungeons.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

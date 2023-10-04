@@ -6,12 +6,14 @@ namespace TeraPartyMonitor.Structures
 {
     internal class TeraDataPools
     {
+        public event Action<TeraDataPool<PartyMatching>> PartyMatchingCollectionChanged;
+
         public TeraDataPool<Client> ClientCollection { get; init; }
         public TeraDataPool<Player> PlayerCollection { get; init; }
         public TeraDataPool<Party> PartyCollection { get; init; }
         public TeraDataPool<PartyInfo> PartyInfoCollection { get; init; }
         public TeraDataPool<PartyMatching> PartyMatchingCollection { get; init; }
-        protected TeraDataPool<Player> CachedPlayers { get; init; }
+        //protected TeraDataPool<Player> CachedPlayers { get; init; }
 
         public TeraDataPools(int capacity = 64)
         {
@@ -20,32 +22,31 @@ namespace TeraPartyMonitor.Structures
             PartyCollection = new(capacity);
             PartyInfoCollection = new(capacity);
             PartyMatchingCollection = new(capacity);
-            CachedPlayers = new(capacity);
+            //CachedPlayers = new(capacity);
 
             ClientCollection.ItemRemoved += ClientCollection_ItemRemoved;
             PlayerCollection.ItemRemoved += PlayerCollection_ItemRemoved;
             PartyCollection.ItemRemoved += PartyCollection_ItemRemoved;
             PartyMatchingCollection.ItemRemoved += PartyMatchingCollection_ItemRemoved;
+            PartyMatchingCollection.ItemAdded += PartyMatchingCollection_ItemAdded;
+            PartyMatchingCollection.ItemChanged += PartyMatchingCollection_ItemChanged;
         }
 
         #region Event Handlers
 
+        private void PartyMatchingCollection_ItemChanged(PartyMatching arg1, PartyMatching arg2)
+        {
+            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection);
+        }
+
+        private void PartyMatchingCollection_ItemAdded(PartyMatching obj)
+        {
+            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection);
+        }
+
         private void PartyMatchingCollection_ItemRemoved(PartyMatching partyMatching)
         {
-            //foreach (var player in partyMatching.LinkedParty.Players)
-            //{
-            //    switch (partyMatching.MatchingType)
-            //    {
-            //        case MatchingTypes.Dungeon:
-            //            player.DungeonMatchingProfile = null;
-            //            break;
-            //        case MatchingTypes.Battleground:
-            //            player.BattlegroundMatchingProfile = null;
-            //            break;
-            //        default:
-            //            throw new MatchingTypesInvalidEnumArgumentException(partyMatching.MatchingType);
-            //    }
-            //}
+            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection);
         }
 
         private void PartyCollection_ItemRemoved(Party party)
@@ -55,18 +56,6 @@ namespace TeraPartyMonitor.Structures
             {
                 PartyInfoCollection.Remove(partyInfo);
             }
-
-            //var dungeonMatching = GetPartyMatchingByParty(party, MatchingTypes.Dungeon);
-            //if (dungeonMatching != null)
-            //{
-            //    PartyMatchingCollection.Remove(dungeonMatching);
-            //}
-
-            //var battlegroundMatching = GetPartyMatchingByParty(party, MatchingTypes.Battleground);
-            //if (battlegroundMatching != null)
-            //{
-            //    PartyMatchingCollection.Remove(battlegroundMatching);
-            //}
         }
 
         private void PlayerCollection_ItemRemoved(Player player)
@@ -149,21 +138,6 @@ namespace TeraPartyMonitor.Structures
                 throw new Exception($"Party ({party}) has more than one PartyInfo");
             }
         }
-
-        //public PartyMatching? GetPartyMatchingByParty(Party party, MatchingTypes type)
-        //{
-        //    if (party == null)
-        //        throw new ArgumentNullException(nameof(party));
-
-        //    try
-        //    {
-        //        return PartyMatchingCollection.SingleOrDefault(p => p.LinkedParty.Equals(party) && p.MatchingType == type);
-        //    }
-        //    catch
-        //    {
-        //        throw new Exception($"Party ({party}) has more than one PartyMatching ({type})");
-        //    }
-        //}
 
         public PartyMatching? GetPartyMatchingByPlayer(Player player, MatchingTypes type)
         {

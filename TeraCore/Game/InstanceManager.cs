@@ -7,8 +7,8 @@
 
         static InstanceManager()
         {
-            var d = Path.Combine(Environment.CurrentDirectory, "dungeons.txt");
-            var b = Path.Combine(Environment.CurrentDirectory, "battlegrounds.txt");
+            var d = Path.Combine(Environment.CurrentDirectory, "Resources", "dungeons.txt");
+            var b = Path.Combine(Environment.CurrentDirectory, "Resources", "battlegrounds.txt");
             if (File.Exists(d))
                 dungeons = new(ReadFile(d));
 

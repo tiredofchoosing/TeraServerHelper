@@ -1,0 +1,5 @@
+{
+  "Server": "178.250.154.7:7801",
+  "DungeonApiUrl": "https://tera-asura.ru/api/dungeons",
+  "BattlegroundApiUrl": "https://tera-asura.ru/api/battleground"
+}

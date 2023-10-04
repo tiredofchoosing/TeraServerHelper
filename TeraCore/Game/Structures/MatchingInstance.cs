@@ -1,5 +1,6 @@
 ﻿namespace TeraCore.Game.Structures
 {
+    [Serializable]
     public abstract class MatchingInstance
     {
         public uint Id { get; init; }
@@ -18,6 +19,11 @@
             Id = id;
             Name = InstanceManager.GetInstatnceName(id);
             Level = InstanceManager.GetInstatnceLevel(id);
+        }
+
+        public bool Equals(MatchingInstance instance)
+        {
+            return Id == instance.Id;
         }
     }
 }

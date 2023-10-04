@@ -1,14 +1,16 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.Extensions.Configuration;
+using NLog;
 using System.Net;
 using System.Text;
 using TeraCore.Game;
 using TeraCore.Game.Messages;
 using TeraCore.Game.Structures;
 using TeraCore.Sniffing;
+using TeraPartyMonitor.DataSender;
+using TeraPartyMonitor.DataSender.Models;
 using TeraPartyMonitor.MessageProcessor;
 using TeraPartyMonitor.Structures;
 using TeraSniffing;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TeraPartyMonitor
 {
@@ -19,70 +21,122 @@ namespace TeraPartyMonitor
         static OpCodeNamer opCodeNamer;
         static MessageFactory messageFactory;
         static MessageProcessorFactory messageProcessorFactory;
-        static readonly IPEndPoint defaultServerEndPoint = IPEndPoint.Parse("178.250.154.7:7801");
 
-        static TeraDataPools dataPools = new();
+        static Logger logger;
+        static Requester dungeonRequester;
+        static TeraDataPools dataPools;
 
         static void Main(string[] args)
         {
-            CustomServer? server = null;
-            if (args.Length == 1)
+            var nlogConfigFile = Path.Combine(Environment.CurrentDirectory, "Properties", "nlog.config");
+            LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(nlogConfigFile);
+            logger = LogManager.GetLogger("Main");
+
+            try
             {
-                if (IPEndPoint.TryParse(args[0], out var ep))
+                var config = GetConfig();
+                var serverString = config["Server"];
+                var dungeonApiUrl = config["DungeonApiUrl"];
+                //var battlegroundApiUrl = config["BattlegroundApiUrl"];
+
+                if (serverString == null || dungeonApiUrl == null)// || battlegroundApiUrl == null)
+                {
+                    var sb = new StringBuilder("Config file does not contain required keys: ");
+                    if (serverString == null)
+                        sb.AppendLine("Server");
+                    if (dungeonApiUrl == null)
+                        sb.AppendLine("DungeonApiUrl");
+                    //if (battlegroundApiUrl == null)
+                    //    sb.AppendLine("BattlegroundApiUrl");
+
+                    logger.Fatal(sb.ToString());
+                    return;
+                }
+
+                CustomServer server;
+                if (IPEndPoint.TryParse(serverString, out var ep))
                 {
                     server = new CustomServer(ep);
                 }
-            }
-            else if (args.Length == 2)
-            {
-                if (IPEndPoint.TryParse($"{args[0]}:{args[1]}", out var ep))
+                else
                 {
-                    server = new CustomServer(ep);
+                    logger.Fatal("Could not parse server address.");
+                    return;
                 }
+
+                opCodes = new Dictionary<ushort, string>
+                {
+                    { 58604, "S_LOGIN" },
+                    { 54807, "S_RETURN_TO_LOBBY" },
+                    { 48376, "S_ADD_INTER_PARTY_MATCH_POOL" },
+                    { 42469, "S_DEL_INTER_PARTY_MATCH_POOL" },
+                    { 21623, "S_MODIFY_INTER_PARTY_MATCH_POOL" },
+
+                    { 23845, "C_REGISTER_PARTY_INFO" },
+                    { 54412, "C_UNREGISTER_PARTY_INFO" },
+                    //{ 45446, "S_EXIT" },
+                };
+
+                opCodeNamer = new(opCodes);
+                messageFactory = new(opCodeNamer);
+
+                teraSniffer = new(server);
+                teraSniffer.MessageClientReceived += TeraMessageReceived;
+                teraSniffer.NewClientConnection += TeraNewConnection;
+                teraSniffer.EndClientConnection += TeraEndConnection;
+                teraSniffer.Enabled = true;
+
+                dataPools = new();
+                dataPools.PartyMatchingCollectionChanged += DataPools_MatchingChanged;
+                messageProcessorFactory = new(dataPools);
+
+                dungeonRequester = new(dungeonApiUrl);
+                //dungeonRequester.RequestSending += DungeonRequester_RequestSending;
+                dungeonRequester.ResponseReceived += DungeonRequester_ResponseReceived;
+
+                var thread = new Thread(new ThreadStart(MainLoop));
+                thread.Start();
             }
-            if (args.Length > 0 && server == null)
+            catch (Exception e)
             {
-                Console.WriteLine("Could not parse ip and port. Using default values.");
+                logger.Fatal(e.Message);
+                return;
             }
+        }
 
-            server ??= new CustomServer(defaultServerEndPoint, "Asura");
+        private static void DungeonRequester_ResponseReceived(bool success, string? errorMessage)
+        {
+            if (!success)
+                logger.Debug(errorMessage);
+        }
 
-            opCodes = new Dictionary<ushort, string>
-            {
-                { 58604, "S_LOGIN" },
-                { 54807, "S_RETURN_TO_LOBBY" },
-                { 48376, "S_ADD_INTER_PARTY_MATCH_POOL" },
-                { 42469, "S_DEL_INTER_PARTY_MATCH_POOL" },
-                { 21623, "S_MODIFY_INTER_PARTY_MATCH_POOL" },
+        private static void DungeonRequester_RequestSending(StringContent content)
+        {
+            logger.Debug(content);
+        }
 
-                { 23845, "C_REGISTER_PARTY_INFO" },
-                { 54412, "C_UNREGISTER_PARTY_INFO" },
-                //{ 45446, "S_EXIT" },
-            };
+        private async static void DataPools_MatchingChanged(TeraDataPool<PartyMatching> matchings)
+        { 
+            int i = 1;
+            var dungeons = matchings
+                .Where(m => m.MatchingType == MatchingTypes.Dungeon)
+                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
+                .GroupBy(s => s.instance)
+                .Select(g => new DungeonMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Dungeon)g.Key));
 
-            opCodeNamer = new(opCodes);
-            messageFactory = new(opCodeNamer);
-            messageProcessorFactory = new(dataPools);
-
-            teraSniffer = new CustomTeraSniffer(server);
-            teraSniffer.MessageClientReceived += TeraMessageReceived;
-            teraSniffer.NewClientConnection += TeraNewConnection;
-            teraSniffer.EndClientConnection += TeraEndConnection;
-            teraSniffer.Enabled = true;
-
-            var thread = new Thread(new ThreadStart(MainLoop));
-            thread.Start();
+            await dungeonRequester.CreateAsync(dungeons);
         }
 
         private static void MainLoop()
         {
-            Console.WriteLine("Sniffing started");
-            int i = 1;
+            logger.Info("Sniffing started");
+            //int i = 1;
             while (true)
             {
+                /*
                 if (dataPools.PlayerCollection.Count > 0)
                 {
-                    if (i > 20)
+                    if (i > 3)
                     {
                         //Console.WriteLine($"{dataPools.PartyInfoCollection.Count} party in lfg");
                         //foreach (var partyInfo in dataPools.PartyInfoCollection)
@@ -114,22 +168,30 @@ namespace TeraPartyMonitor
                         i = 0;
                     }
                     i++;
-                }
+                }*/
 
-                Thread.Sleep(100);
+                Thread.Sleep(1000);
             }
+        }
+
+        private static IConfiguration GetConfig()
+        {
+            return new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                .AddJsonFile("Properties\\config.json", false)
+                .Build();
         }
 
         private static void TeraNewConnection(Client client)
         {
             dataPools.ClientCollection.Add(client);
-            Console.WriteLine($"New connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}");
+            logger.Info($"New connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}");
         }
 
         private static void TeraEndConnection(Client client)
         {
             dataPools.ClientCollection.Remove(client);
-            Console.WriteLine($"End connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}");
+            logger.Info($"End connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}");
         }
 
         private static void TeraMessageReceived(Message message, Client client)
@@ -138,14 +200,13 @@ namespace TeraPartyMonitor
             if (msg is UnknownMessage)
                 return;
 
-            Console.WriteLine($"{message.Time}: {opCodeNamer.GetName(message.OpCode)}");
             try
             {
                 ProcessParsedMessage(msg, client);
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error while processing ParsedMessage\n{e.Message}");
+                logger.Error($"Error while processing ParsedMessage\n{e.Message}");
             }
         }
 

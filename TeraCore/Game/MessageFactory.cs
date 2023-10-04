@@ -50,8 +50,8 @@ namespace TeraCore.Game
                 {"S_DEL_INTER_PARTY_MATCH_POOL", typeof(SDelInterPartyMatchPoolMessage)},
                 {"S_MODIFY_INTER_PARTY_MATCH_POOL", typeof(SModifyInterPartyMatchPoolMessage)},
 
-                {"C_REGISTER_PARTY_INFO", typeof(CRegisterPartyInfoMessage)},
-                {"C_UNREGISTER_PARTY_INFO", typeof(CUnregisterPartyInfoMessage)},
+                //{"C_REGISTER_PARTY_INFO", typeof(CRegisterPartyInfoMessage)},
+                //{"C_UNREGISTER_PARTY_INFO", typeof(CUnregisterPartyInfoMessage)},
                 //{"S_EXIT", typeof(S_EXIT)},
             };
     }

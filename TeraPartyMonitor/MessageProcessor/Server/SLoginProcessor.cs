@@ -16,7 +16,7 @@ namespace TeraPartyMonitor.MessageProcessor
                 var player = new Player(m.PlayerId, m.Name, m.Level, m.Class);
                 DataPools.PlayerCollection.Add(player);
                 Client.CurrentPlayer = player;
-                Console.WriteLine($"{Client.EndPoint.Address}:{Client.EndPoint.Port}: New player has log on: {player}");
+                //Console.WriteLine($"{Client.EndPoint.Address}:{Client.EndPoint.Port}: New player has log on: {player}");
             }
         }
     }
