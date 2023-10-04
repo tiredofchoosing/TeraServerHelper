@@ -15,8 +15,7 @@ namespace TeraPartyMonitor.MessageProcessor
             {
                 if (Client.CurrentPlayer != null)
                 {
-                    DataPools.PlayerCollection.Remove(Client.CurrentPlayer);
-                    //Console.WriteLine($"Player has log off: {Client.CurrentPlayer}");
+                    DataPools.Remove(Client.CurrentPlayer);
                     Client.CurrentPlayer = null;
                 }
                 return;

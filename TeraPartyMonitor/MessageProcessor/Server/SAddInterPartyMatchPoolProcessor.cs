@@ -25,7 +25,7 @@ namespace TeraPartyMonitor.MessageProcessor
                 }
 
                 var partyMatching = new PartyMatching(m.Profiles, m.Instances, m.MatchingType);
-                DataPools.PartyMatchingCollection.Add(partyMatching);
+                DataPools.Add(partyMatching);
             }
         }
     }

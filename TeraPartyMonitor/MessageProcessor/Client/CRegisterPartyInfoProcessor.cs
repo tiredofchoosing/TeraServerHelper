@@ -19,11 +19,10 @@ namespace TeraPartyMonitor.MessageProcessor
                 var partyInfo = DataPools.GetPartyInfoByParty(party);
                 if (partyInfo != null)
                 {
-                    DataPools.PartyInfoCollection.Remove(partyInfo);
-                    partyInfo = null;
+                    DataPools.Remove(partyInfo);
                 }
                 partyInfo = new PartyInfo(party, m.Message, m.IsRaid);
-                DataPools.PartyInfoCollection.Add(partyInfo);
+                DataPools.Add(partyInfo);
                 return;
             }
         }

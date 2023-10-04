@@ -1,19 +1,29 @@
 ﻿using TeraCore.Game.Structures;
 using TeraCore.Game;
 using System.ComponentModel;
+using System.Numerics;
 
 namespace TeraPartyMonitor.Structures
 {
     internal class TeraDataPools
     {
-        public event Action<TeraDataPool<PartyMatching>> PartyMatchingCollectionChanged;
+        public event Action<IReadOnlyCollection<PartyMatching>, MatchingTypes> PartyMatchingCollectionChanged;
 
-        public TeraDataPool<Client> ClientCollection { get; init; }
-        public TeraDataPool<Player> PlayerCollection { get; init; }
-        public TeraDataPool<Party> PartyCollection { get; init; }
-        public TeraDataPool<PartyInfo> PartyInfoCollection { get; init; }
-        public TeraDataPool<PartyMatching> PartyMatchingCollection { get; init; }
+        protected TeraDataPool<Client> ClientCollection { get; init; }
+        protected TeraDataPool<Player> PlayerCollection { get; init; }
+        protected TeraDataPool<Party> PartyCollection { get; init; }
+        protected TeraDataPool<PartyInfo> PartyInfoCollection { get; init; }
+        protected TeraDataPool<PartyMatching> PartyMatchingCollection { get; init; }
         //protected TeraDataPool<Player> CachedPlayers { get; init; }
+
+        private Dictionary<Type, object> lockers = new()
+        {
+            { typeof(Client), new() },
+            { typeof(Player), new() },
+            { typeof(Party), new() },
+            { typeof(PartyInfo), new() },
+            { typeof(PartyMatching), new() }
+        };
 
         public TeraDataPools(int capacity = 64)
         {
@@ -34,19 +44,19 @@ namespace TeraPartyMonitor.Structures
 
         #region Event Handlers
 
-        private void PartyMatchingCollection_ItemChanged(PartyMatching arg1, PartyMatching arg2)
+        private void PartyMatchingCollection_ItemChanged(PartyMatching matching1, PartyMatching matching2)
         {
-            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection);
+            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection.AsReadOnly(), matching1.MatchingType);
         }
 
-        private void PartyMatchingCollection_ItemAdded(PartyMatching obj)
+        private void PartyMatchingCollection_ItemAdded(PartyMatching matching)
         {
-            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection);
+            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection.AsReadOnly(), matching.MatchingType);
         }
 
-        private void PartyMatchingCollection_ItemRemoved(PartyMatching partyMatching)
+        private void PartyMatchingCollection_ItemRemoved(PartyMatching matching)
         {
-            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection);
+            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection.AsReadOnly(), matching.MatchingType);
         }
 
         private void PartyCollection_ItemRemoved(Party party)
@@ -54,7 +64,7 @@ namespace TeraPartyMonitor.Structures
             var partyInfo = GetPartyInfoByParty(party);
             if (partyInfo != null)
             {
-                PartyInfoCollection.Remove(partyInfo);
+                Remove(partyInfo);
             }
         }
 
@@ -67,7 +77,7 @@ namespace TeraPartyMonitor.Structures
             if (party.Players.Count > 1)
                 return;
 
-            PartyCollection.Remove(party);
+            Remove(party);
 
             //CachedPlayers.Add(player);
         }
@@ -80,7 +90,7 @@ namespace TeraPartyMonitor.Structures
 
             if (PlayerCollection.Contains(player))
             {
-                PlayerCollection.Remove(player);
+                Remove(player);
             }
         }
 
@@ -114,7 +124,7 @@ namespace TeraPartyMonitor.Structures
                 if (party == null)
                 {
                     party = new Party(player);
-                    PartyCollection.Add(party);
+                    Add(party);
                 }
                 return party;
             }
@@ -170,6 +180,71 @@ namespace TeraPartyMonitor.Structures
             }
         }
 
+        public void Add(Client client)
+        {
+            Add(ClientCollection, client);
+        }
+
+        public void Add(Player player)
+        {
+            Add(PlayerCollection, player);
+        }
+
+        public void Add(Party party)
+        {
+            Add(PartyCollection, party);
+        }
+
+        public void Add(PartyInfo partyInfo)
+        {
+            Add(PartyInfoCollection, partyInfo);
+        }
+
+        public void Add(PartyMatching partyMatching)
+        {
+            Add(PartyMatchingCollection, partyMatching);
+        }
+
+        public void Remove(Client client)
+        {
+            Remove(ClientCollection, client);
+        }
+
+        public void Remove(Player player)
+        {
+            Remove(PlayerCollection, player);
+        }
+
+        public void Remove(Party party)
+        {
+            Remove(PartyCollection, party);
+        }
+
+        public void Remove(PartyInfo partyInfo)
+        {
+            Remove(PartyInfoCollection, partyInfo);
+        }
+
+        public void Remove(PartyMatching partyMatching)
+        {
+            Remove(PartyMatchingCollection, partyMatching);
+        }
+
         #endregion
+
+        private void Add<T>(TeraDataPool<T> pool, T item)
+        {
+            lock (lockers[typeof(T)])
+            {
+                pool.Add(item);
+            }
+        }
+        private void Remove<T>(TeraDataPool<T> pool, T item)
+        {
+            lock (lockers[typeof(T)])
+            {
+                pool.Remove(item);
+            }
+        }
     }
 }

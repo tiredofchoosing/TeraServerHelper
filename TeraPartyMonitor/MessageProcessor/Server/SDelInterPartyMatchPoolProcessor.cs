@@ -46,7 +46,7 @@ namespace TeraPartyMonitor.MessageProcessor
             if (!partyMatching.MatchingProfiles.First().LinkedPlayer.Equals(player))
                 return;
 
-            DataPools.PartyMatchingCollection.Remove(partyMatching);
+            DataPools.Remove(partyMatching);
         }
     }
 }

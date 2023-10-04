@@ -16,7 +16,9 @@ namespace TeraPartyMonitor.MessageProcessor
                 var player = Client.CurrentPlayer;
                 var party = DataPools.GetPartyByPlayer(player);
                 var partyInfo = DataPools.GetPartyInfoByParty(party);
-                DataPools.PartyInfoCollection.Remove(partyInfo);
+                if (partyInfo != null)
+                    DataPools.Remove(partyInfo);
+
                 return;
             }
         }

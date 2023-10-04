@@ -23,31 +23,36 @@ namespace TeraPartyMonitor
         static MessageProcessorFactory messageProcessorFactory;
 
         static Logger logger;
-        static Requester dungeonRequester;
+        static Requester dgRequester, bgRequester;
         static TeraDataPools dataPools;
+        static IConfiguration config;
 
         static void Main(string[] args)
         {
             var nlogConfigFile = Path.Combine(Environment.CurrentDirectory, "Properties", "nlog.config");
             LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(nlogConfigFile);
             logger = LogManager.GetLogger("Main");
+            logger.Info("======================");
+            logger.Info("Init.");
 
             try
             {
-                var config = GetConfig();
+                config = GetConfig();
                 var serverString = config["Server"];
-                var dungeonApiUrl = config["DungeonApiUrl"];
-                //var battlegroundApiUrl = config["BattlegroundApiUrl"];
+                var dgApiUrl = config["DungeonApiUrl"];
+                var bgApiUrl = config["BattlegroundApiUrl"];
 
-                if (serverString == null || dungeonApiUrl == null)// || battlegroundApiUrl == null)
+                if (string.IsNullOrWhiteSpace(serverString) || 
+                    string.IsNullOrWhiteSpace(dgApiUrl) ||
+                    string.IsNullOrWhiteSpace(bgApiUrl))
                 {
                     var sb = new StringBuilder("Config file does not contain required keys: ");
-                    if (serverString == null)
+                    if (string.IsNullOrWhiteSpace(serverString))
                         sb.AppendLine("Server");
-                    if (dungeonApiUrl == null)
+                    if (string.IsNullOrWhiteSpace(dgApiUrl))
                         sb.AppendLine("DungeonApiUrl");
-                    //if (battlegroundApiUrl == null)
-                    //    sb.AppendLine("BattlegroundApiUrl");
+                    if (string.IsNullOrWhiteSpace(bgApiUrl))
+                        sb.AppendLine("BattlegroundApiUrl");
 
                     logger.Fatal(sb.ToString());
                     return;
@@ -90,9 +95,13 @@ namespace TeraPartyMonitor
                 dataPools.PartyMatchingCollectionChanged += DataPools_MatchingChanged;
                 messageProcessorFactory = new(dataPools);
 
-                dungeonRequester = new(dungeonApiUrl);
-                //dungeonRequester.RequestSending += DungeonRequester_RequestSending;
-                dungeonRequester.ResponseReceived += DungeonRequester_ResponseReceived;
+                dgRequester = new(dgApiUrl);
+                //dgRequester.RequestSending += DungeonRequester_RequestSending;
+                dgRequester.ResponseReceived += DungeonRequester_ResponseReceived;
+
+                bgRequester = new(bgApiUrl);
+                //bgRequester.RequestSending += DungeonRequester_RequestSending;
+                bgRequester.ResponseReceived += DungeonRequester_ResponseReceived;
 
                 var thread = new Thread(new ThreadStart(MainLoop));
                 thread.Start();
@@ -104,73 +113,12 @@ namespace TeraPartyMonitor
             }
         }
 
-        private static void DungeonRequester_ResponseReceived(bool success, string? errorMessage)
-        {
-            if (!success)
-                logger.Debug(errorMessage);
-        }
-
-        private static void DungeonRequester_RequestSending(StringContent content)
-        {
-            logger.Debug(content);
-        }
-
-        private async static void DataPools_MatchingChanged(TeraDataPool<PartyMatching> matchings)
-        { 
-            int i = 1;
-            var dungeons = matchings
-                .Where(m => m.MatchingType == MatchingTypes.Dungeon)
-                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
-                .GroupBy(s => s.instance)
-                .Select(g => new DungeonMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Dungeon)g.Key));
-
-            await dungeonRequester.CreateAsync(dungeons);
-        }
-
         private static void MainLoop()
         {
-            logger.Info("Sniffing started");
-            //int i = 1;
+            logger.Info("Sniffing started.");
             while (true)
             {
-                /*
-                if (dataPools.PlayerCollection.Count > 0)
-                {
-                    if (i > 3)
-                    {
-                        //Console.WriteLine($"{dataPools.PartyInfoCollection.Count} party in lfg");
-                        //foreach (var partyInfo in dataPools.PartyInfoCollection)
-                        //{
-                        //    Console.WriteLine($"\t{partyInfo.Party} | \"{partyInfo.Message}\"");
-                        //}
-
-                        if (dataPools.PartyMatchingCollection.Count == 0)
-                            continue;
-
-                        Console.WriteLine($"{dataPools.PartyMatchingCollection.Count} party in matching");
-                        foreach (var partyMatching in dataPools.PartyMatchingCollection)
-                        {
-                            var sb = new StringBuilder();
-                            sb.AppendLine($"\tPlayers count: {partyMatching.MatchingProfiles.Count}");
-                            foreach (var p in partyMatching.MatchingProfiles)
-                            {
-                                sb.AppendLine($"\t\t{p.LinkedPlayer} | {p.ToString(true)}");
-                            }
-
-                            sb.AppendLine($"\tInstances count: {partyMatching.Instances.Count}");
-                            foreach (var d in partyMatching.Instances)
-                            {
-                                sb.AppendLine($"\t\t{d.Id}: {d.Name} | {d.Level}");
-                            }
-                            Console.WriteLine(sb.ToString());
-                        }
-
-                        i = 0;
-                    }
-                    i++;
-                }*/
-
-                Thread.Sleep(1000);
+                Thread.Sleep(10000);
             }
         }
 
@@ -178,20 +126,58 @@ namespace TeraPartyMonitor
         {
             return new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
-                .AddJsonFile("Properties\\config.json", false)
+                .AddJsonFile(Path.Combine("Properties", "config.json"), false)
                 .Build();
+        }
+
+        #region Event Handlers
+
+        private static void DungeonRequester_ResponseReceived(bool success, string? errorMessage)
+        {
+            if (!success)
+                logger.Error(errorMessage);
+        }
+
+        private static void DungeonRequester_RequestSending(StringContent content)
+        {
+            logger.Debug(content);
+        }
+
+        private async static void DataPools_MatchingChanged(IReadOnlyCollection<PartyMatching> matchings, MatchingTypes type)
+        {
+            int i = 1;
+            var grouping = matchings
+                .Where(m => m.MatchingType == type)
+                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
+                .GroupBy(s => s.instance);
+
+            switch (type)
+            {
+                case MatchingTypes.Dungeon:
+                    var dungeons = grouping.Select(g => new DungeonMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Dungeon)g.Key));
+                    await dgRequester.CreateAsync(dungeons);
+                    break;
+
+                case MatchingTypes.Battleground:
+                    var battlegrounds = grouping.Select(g => new BattlegroundMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Battleground)g.Key));
+                    await bgRequester.CreateAsync(battlegrounds);
+                    break;
+
+                default:
+                    throw new MatchingTypesInvalidEnumArgumentException(type);
+            };
         }
 
         private static void TeraNewConnection(Client client)
         {
-            dataPools.ClientCollection.Add(client);
-            logger.Info($"New connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}");
+            dataPools.Add(client);
+            logger.Info($"New connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}.");
         }
 
         private static void TeraEndConnection(Client client)
         {
-            dataPools.ClientCollection.Remove(client);
-            logger.Info($"End connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}");
+            dataPools.Remove(client);
+            logger.Info($"End connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}.");
         }
 
         private static void TeraMessageReceived(Message message, Client client)
@@ -209,6 +195,8 @@ namespace TeraPartyMonitor
                 logger.Error($"Error while processing ParsedMessage\n{e.Message}");
             }
         }
+
+        #endregion
 
         private static void ProcessParsedMessage(ParsedMessage message, Client client)
         {
