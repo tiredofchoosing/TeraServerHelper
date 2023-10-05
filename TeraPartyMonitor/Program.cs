@@ -93,7 +93,7 @@ namespace TeraPartyMonitor
 
                 dataPools = new();
                 dataPools.PartyMatchingCollectionChanged += DataPools_MatchingChanged;
-                messageProcessorFactory = new(dataPools);
+                messageProcessorFactory = new(dataPools, logger);
 
                 dgRequester = new(dgApiUrl);
                 //dgRequester.RequestSending += DungeonRequester_RequestSending;
@@ -118,7 +118,7 @@ namespace TeraPartyMonitor
             logger.Info("Sniffing started.");
             while (true)
             {
-                Thread.Sleep(10000);
+                Thread.Sleep(5000);
             }
         }
 

@@ -15,5 +15,10 @@
         {
             Message = info;
         }
+
+        public override string ToString()
+        {
+            return $"PL: {Party?.Leader} | Message: {Message}";
+        }
     }
 }

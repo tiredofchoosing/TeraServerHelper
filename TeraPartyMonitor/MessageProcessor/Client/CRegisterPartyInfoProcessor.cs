@@ -1,4 +1,5 @@
-﻿using TeraCore.Game;
+﻿using NLog;
+using TeraCore.Game;
 using TeraCore.Game.Messages;
 using TeraCore.Game.Structures;
 using TeraPartyMonitor.Structures;
@@ -7,7 +8,8 @@ namespace TeraPartyMonitor.MessageProcessor
 {
     internal class CRegisterPartyInfoProcessor : TeraMessageProcessor
     {
-        public CRegisterPartyInfoProcessor(ParsedMessage message, Client client, TeraDataPools dataPools) : base(message, client, dataPools) { }
+        public CRegisterPartyInfoProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger) 
+            : base(message, client, dataPools, logger) { }
 
         public override void Process()
         {
@@ -16,14 +18,19 @@ namespace TeraPartyMonitor.MessageProcessor
                 var player = Client.CurrentPlayer;
                 var party = DataPools.GetOrCreatePartyByPlayer(player);
 
-                var partyInfo = DataPools.GetPartyInfoByParty(party);
-                if (partyInfo != null)
+                var oldPartyInfo = DataPools.GetPartyInfoByParty(party);
+                var newPartyInfo = new PartyInfo(party, m.Message, m.IsRaid);
+
+                if (oldPartyInfo != null)
                 {
-                    DataPools.Remove(partyInfo);
+                    DataPools.Replace(oldPartyInfo, newPartyInfo);
+                    Logger.Debug($"{Client}|Modified PartyInfo: {oldPartyInfo} -> {newPartyInfo}.");
                 }
-                partyInfo = new PartyInfo(party, m.Message, m.IsRaid);
-                DataPools.Add(partyInfo);
-                return;
+                else
+                {
+                    DataPools.Add(newPartyInfo);
+                    Logger.Debug($"{Client}|Added PartyInfo: {newPartyInfo}.");
+                }
             }
         }
     }

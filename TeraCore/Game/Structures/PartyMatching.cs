@@ -12,5 +12,10 @@
             Instances = instances;
             MatchingType = type;
         }
+
+        public override string ToString()
+        {
+            return $"Type: {MatchingType}, Players count: {MatchingProfiles.Count}, Instances count: {Instances.Count}";
+        }
     }
 }

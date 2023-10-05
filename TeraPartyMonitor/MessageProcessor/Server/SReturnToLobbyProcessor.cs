@@ -1,13 +1,14 @@
-﻿using TeraCore.Game;
+﻿using NLog;
+using TeraCore.Game;
 using TeraCore.Game.Messages;
-using TeraCore.Game.Structures;
 using TeraPartyMonitor.Structures;
 
 namespace TeraPartyMonitor.MessageProcessor
 {
     internal class SReturnToLobbyProcessor : TeraMessageProcessor
     {
-        public SReturnToLobbyProcessor(ParsedMessage message, Client client, TeraDataPools dataPools) : base(message, client, dataPools) { }
+        public SReturnToLobbyProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger)
+            : base(message, client, dataPools, logger) { }
 
         public override void Process()
         {
@@ -17,7 +18,11 @@ namespace TeraPartyMonitor.MessageProcessor
                 {
                     DataPools.Remove(Client.CurrentPlayer);
                     Client.CurrentPlayer = null;
+                    Logger.Debug($"{Client}|Player logout: {Client.CurrentPlayer}.");
                 }
+                else
+                    Logger.Warn($"{Client}|Logout without CurrentPlayer property set!");
+
                 return;
             }
         }

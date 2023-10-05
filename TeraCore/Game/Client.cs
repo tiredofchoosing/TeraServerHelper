@@ -12,5 +12,10 @@ namespace TeraCore.Game
         {
             EndPoint = endPoint;
         }
+
+        public override string ToString()
+        {
+            return $"{EndPoint.Address}:{EndPoint.Port}";
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using NLog;
+using System.ComponentModel;
 using TeraCore.Game;
 using TeraCore.Game.Messages;
 using TeraCore.Game.Structures;
@@ -8,7 +9,8 @@ namespace TeraPartyMonitor.MessageProcessor
 {
     internal class SAddInterPartyMatchPoolProcessor : TeraMessageProcessor
     {
-        public SAddInterPartyMatchPoolProcessor(ParsedMessage message, Client client, TeraDataPools dataPools) : base(message, client, dataPools) { }
+        public SAddInterPartyMatchPoolProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger)
+            : base(message, client, dataPools, logger) { }
 
         public override void Process()
         {
@@ -26,6 +28,7 @@ namespace TeraPartyMonitor.MessageProcessor
 
                 var partyMatching = new PartyMatching(m.Profiles, m.Instances, m.MatchingType);
                 DataPools.Add(partyMatching);
+                Logger.Debug($"{Client}|Added PartyMatching: {partyMatching}.");
             }
         }
     }

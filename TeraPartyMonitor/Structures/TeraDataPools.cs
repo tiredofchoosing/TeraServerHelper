@@ -1,7 +1,5 @@
 ﻿using TeraCore.Game.Structures;
 using TeraCore.Game;
-using System.ComponentModel;
-using System.Numerics;
 
 namespace TeraPartyMonitor.Structures
 {
@@ -230,6 +228,16 @@ namespace TeraPartyMonitor.Structures
             Remove(PartyMatchingCollection, partyMatching);
         }
 
+        public void Replace(PartyInfo oldPartyInfo, PartyInfo newPartyInfo)
+        {
+            Replace(PartyInfoCollection, oldPartyInfo, newPartyInfo);
+        }
+
+        public void Replace(PartyMatching oldPartyMatching, PartyMatching newPartyMatching)
+        {
+            Replace(PartyMatchingCollection, oldPartyMatching, newPartyMatching);
+        }
+
         #endregion
 
         private void Add<T>(TeraDataPool<T> pool, T item)
@@ -244,6 +252,14 @@ namespace TeraPartyMonitor.Structures
             lock (lockers[typeof(T)])
             {
                 pool.Remove(item);
+            }
+        }
+        private void Replace<T>(TeraDataPool<T> pool, T oldItem, T newItem)
+        {
+            lock (lockers[typeof(T)])
+            {
+                var id = pool.IndexOf(oldItem);
+                pool[id] = newItem;
             }
         }
     }

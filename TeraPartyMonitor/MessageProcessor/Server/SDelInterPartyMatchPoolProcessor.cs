@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-using System.IO;
-using System.Numerics;
+﻿using NLog;
 using TeraCore.Game;
 using TeraCore.Game.Messages;
 using TeraCore.Game.Structures;
@@ -10,7 +8,8 @@ namespace TeraPartyMonitor.MessageProcessor
 {
     internal class SDelInterPartyMatchPoolProcessor : TeraMessageProcessor
     {
-        public SDelInterPartyMatchPoolProcessor(ParsedMessage message, Client client, TeraDataPools dataPools) : base(message, client, dataPools) { }
+        public SDelInterPartyMatchPoolProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger)
+            : base(message, client, dataPools, logger) { }
 
         public override void Process()
         {
@@ -47,6 +46,7 @@ namespace TeraPartyMonitor.MessageProcessor
                 return;
 
             DataPools.Remove(partyMatching);
+            Logger.Debug($"{Client}|Removed PartyMatching: {partyMatching}.");
         }
     }
 }

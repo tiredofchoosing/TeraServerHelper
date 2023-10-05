@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+﻿using NLog;
 using TeraCore.Game;
 using TeraCore.Game.Messages;
 using TeraCore.Game.Structures;
@@ -8,7 +8,8 @@ namespace TeraPartyMonitor.MessageProcessor
 {
     internal class SModifyInterPartyMatchPoolProcessor : TeraMessageProcessor
     {
-        public SModifyInterPartyMatchPoolProcessor(ParsedMessage message, Client client, TeraDataPools dataPools) : base(message, client, dataPools) { }
+        public SModifyInterPartyMatchPoolProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger)
+            : base(message, client, dataPools, logger) { }
 
         public override void Process()
         {
@@ -23,25 +24,28 @@ namespace TeraPartyMonitor.MessageProcessor
             }
         }
 
-        private void TryModify(PartyMatching partyMatching, Player player, IList<(string, bool)> modifiers)
+        private void TryModify(PartyMatching oldPartyMatching, Player player, IList<(string, bool)> modifiers)
         {
-            if (partyMatching == null)
+            if (oldPartyMatching == null)
                 return;
 
-            if (!partyMatching.MatchingProfiles.First().LinkedPlayer.Equals(player))
+            if (!oldPartyMatching.MatchingProfiles.First().LinkedPlayer.Equals(player))
                 return;
 
             var profiles = new List<MatchingProfile>();
 
             foreach ((var name, var isLeader) in modifiers)
             {
-                var profile = partyMatching.MatchingProfiles.Single(p => p.Name.Equals(name));
+                var profile = oldPartyMatching.MatchingProfiles.Single(p => p.Name.Equals(name));
                 var role = profile.Role;
                 var linkedPlayer = profile.LinkedPlayer;
 
                 profiles.Add(new MatchingProfile(name, isLeader, role));
             }
-            partyMatching.MatchingProfiles = profiles;
+
+            var newPartyMatching = new PartyMatching(profiles, oldPartyMatching.Instances, oldPartyMatching.MatchingType);
+            DataPools.Replace(oldPartyMatching, newPartyMatching);
+            Logger.Debug($"{Client}|Modified PartyMatching: {oldPartyMatching} -> {newPartyMatching}.");
         }
     }
 }
