@@ -22,14 +22,18 @@ namespace TeraPartyMonitor
         static MessageFactory messageFactory;
         static MessageProcessorFactory messageProcessorFactory;
 
-        static Logger logger;
+        static ILogger logger;
         static Requester dgRequester, bgRequester;
         static TeraDataPools dataPools;
         static IConfiguration config;
 
+        static bool mainLoopflag = true;
+
         static void Main(string[] args)
         {
-            var nlogConfigFile = Path.Combine(Environment.CurrentDirectory, "Properties", "nlog.config");
+            Console.CancelKeyPress += Console_CancelKeyPress;
+
+            var nlogConfigFile = Path.Combine(Environment.CurrentDirectory, "Config", "nlog.config");
             LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(nlogConfigFile);
             logger = LogManager.GetLogger("Main");
             logger.Info("======================");
@@ -116,7 +120,7 @@ namespace TeraPartyMonitor
         private static void MainLoop()
         {
             logger.Info("Sniffing started.");
-            while (true)
+            while (mainLoopflag)
             {
                 Thread.Sleep(5000);
             }
@@ -126,11 +130,19 @@ namespace TeraPartyMonitor
         {
             return new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
-                .AddJsonFile(Path.Combine("Properties", "config.json"), false)
+                .AddJsonFile(Path.Combine("Config", "config.json"), false)
                 .Build();
         }
 
         #region Event Handlers
+
+        private static void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
+        {
+            e.Cancel = true;
+            teraSniffer.Enabled = false;
+            logger.Info("Sniffing stopped.");
+            mainLoopflag = false;
+        }
 
         private static void DungeonRequester_ResponseReceived(bool success, string? errorMessage)
         {
@@ -171,13 +183,13 @@ namespace TeraPartyMonitor
         private static void TeraNewConnection(Client client)
         {
             dataPools.Add(client);
-            logger.Info($"New connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}.");
+            logger.Info($"New connectoin from {client}.");
         }
 
         private static void TeraEndConnection(Client client)
         {
             dataPools.Remove(client);
-            logger.Info($"End connectoin from {client.EndPoint.Address}:{client.EndPoint.Port}.");
+            logger.Info($"End connectoin from {client}.");
         }
 
         private static void TeraMessageReceived(Message message, Client client)
