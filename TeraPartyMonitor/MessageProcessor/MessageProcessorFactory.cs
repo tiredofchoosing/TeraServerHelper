@@ -8,9 +8,9 @@ namespace TeraPartyMonitor.MessageProcessor
     internal class MessageProcessorFactory
     {
         TeraDataPools _dataPools;
-        ILogger _logger;
+        NLog.ILogger _logger;
 
-        public MessageProcessorFactory(TeraDataPools dataPools, ILogger logger)
+        public MessageProcessorFactory(TeraDataPools dataPools, NLog.ILogger logger)
         {
             _dataPools = dataPools;
             _logger = logger;

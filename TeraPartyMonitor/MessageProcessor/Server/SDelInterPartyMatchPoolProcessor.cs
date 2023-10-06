@@ -8,7 +8,7 @@ namespace TeraPartyMonitor.MessageProcessor
 {
     internal class SDelInterPartyMatchPoolProcessor : TeraMessageProcessor
     {
-        public SDelInterPartyMatchPoolProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger)
+        public SDelInterPartyMatchPoolProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, NLog.ILogger logger)
             : base(message, client, dataPools, logger) { }
 
         public override void Process()

@@ -7,7 +7,7 @@ namespace TeraPartyMonitor.MessageProcessor
 {
     internal class SReturnToLobbyProcessor : TeraMessageProcessor
     {
-        public SReturnToLobbyProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger)
+        public SReturnToLobbyProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, NLog.ILogger logger)
             : base(message, client, dataPools, logger) { }
 
         public override void Process()

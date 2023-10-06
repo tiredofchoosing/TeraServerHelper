@@ -10,11 +10,11 @@ namespace TeraPartyMonitor.MessageProcessor
         protected ParsedMessage Message { get; init; }
         protected Client Client { get; init; }
         protected TeraDataPools DataPools { get; init; }
-        protected ILogger Logger { get; init; }
+        protected NLog.ILogger Logger { get; init; }
 
         public event Action MessageProcessed;
 
-        public TeraMessageProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger)
+        public TeraMessageProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, NLog.ILogger logger)
         {
             Message = message;
             Client = client;

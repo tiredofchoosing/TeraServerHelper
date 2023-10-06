@@ -35,27 +35,27 @@ namespace TeraPartyMonitor.Structures
             ClientCollection.ItemRemoved += ClientCollection_ItemRemoved;
             PlayerCollection.ItemRemoved += PlayerCollection_ItemRemoved;
             PartyCollection.ItemRemoved += PartyCollection_ItemRemoved;
-            PartyMatchingCollection.ItemRemoved += PartyMatchingCollection_ItemRemoved;
-            PartyMatchingCollection.ItemAdded += PartyMatchingCollection_ItemAdded;
-            PartyMatchingCollection.ItemChanged += PartyMatchingCollection_ItemChanged;
+            //PartyMatchingCollection.ItemRemoved += PartyMatchingCollection_ItemRemoved;
+            //PartyMatchingCollection.ItemAdded += PartyMatchingCollection_ItemAdded;
+            //PartyMatchingCollection.ItemChanged += PartyMatchingCollection_ItemChanged;
         }
 
         #region Event Handlers
 
-        private void PartyMatchingCollection_ItemChanged(PartyMatching matching1, PartyMatching matching2)
-        {
-            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection.AsReadOnly(), matching1.MatchingType);
-        }
+        //private void PartyMatchingCollection_ItemChanged(PartyMatching matching1, PartyMatching matching2)
+        //{
+        //    PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection.AsReadOnly(), matching1.MatchingType);
+        //}
 
-        private void PartyMatchingCollection_ItemAdded(PartyMatching matching)
-        {
-            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection.AsReadOnly(), matching.MatchingType);
-        }
+        //private void PartyMatchingCollection_ItemAdded(PartyMatching matching)
+        //{
+        //    PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection.AsReadOnly(), matching.MatchingType);
+        //}
 
-        private void PartyMatchingCollection_ItemRemoved(PartyMatching matching)
-        {
-            PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection.AsReadOnly(), matching.MatchingType);
-        }
+        //private void PartyMatchingCollection_ItemRemoved(PartyMatching matching)
+        //{
+        //    PartyMatchingCollectionChanged?.Invoke(PartyMatchingCollection.AsReadOnly(), matching.MatchingType);
+        //}
 
         private void PartyCollection_ItemRemoved(Party party)
         {
@@ -95,6 +95,11 @@ namespace TeraPartyMonitor.Structures
         #endregion
 
         #region Public Methods
+
+        public IReadOnlyCollection<PartyMatching> GetPartyMatchings()
+        {
+            return PartyMatchingCollection.AsReadOnly();
+        }
 
         public Party? GetPartyByPlayer(Player player)
         {

@@ -8,7 +8,7 @@ namespace TeraPartyMonitor.MessageProcessor
 {
     internal class SLoginProcessor : TeraMessageProcessor
     {
-        public SLoginProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger)
+        public SLoginProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, NLog.ILogger logger)
             : base(message, client, dataPools, logger) { }
 
         public override void Process()

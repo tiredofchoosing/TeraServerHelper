@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using NLog;
+﻿using NLog;
 using System.Net;
 using System.Text;
 using TeraCore.Game;
@@ -22,18 +21,19 @@ namespace TeraPartyMonitor
         static MessageFactory messageFactory;
         static MessageProcessorFactory messageProcessorFactory;
 
-        static ILogger logger;
-        static Requester dgRequester, bgRequester;
+        static NLog.ILogger logger;
+        //static Requester dgRequester, bgRequester;
         static TeraDataPools dataPools;
         static IConfiguration config;
 
-        static bool mainLoopflag = true;
+        //static bool mainLoopflag = true;
+        static readonly string configDir = "Config";
 
         static void Main(string[] args)
         {
             Console.CancelKeyPress += Console_CancelKeyPress;
 
-            var nlogConfigFile = Path.Combine(Environment.CurrentDirectory, "Config", "nlog.config");
+            var nlogConfigFile = Path.Combine(Environment.CurrentDirectory, configDir, "nlog.config");
             LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(nlogConfigFile);
             logger = LogManager.GetLogger("Main");
             logger.Info("======================");
@@ -43,35 +43,50 @@ namespace TeraPartyMonitor
             {
                 config = GetConfig();
                 var serverString = config["Server"];
-                var dgApiUrl = config["DungeonApiUrl"];
-                var bgApiUrl = config["BattlegroundApiUrl"];
+                //var dgApiUrl = config["DungeonApiUrl"];
+                //var bgApiUrl = config["BattlegroundApiUrl"];
+                var webAppUrls = config["WebAppUrls"];
+                var dgRoute = config["DungeonsRoute"];
+                var bgRoute = config["BattlegroundsRoute"];
 
-                if (string.IsNullOrWhiteSpace(serverString) || 
-                    string.IsNullOrWhiteSpace(dgApiUrl) ||
-                    string.IsNullOrWhiteSpace(bgApiUrl))
+                if (string.IsNullOrWhiteSpace(serverString) ||
+                    //string.IsNullOrWhiteSpace(dgApiUrl) ||
+                    //string.IsNullOrWhiteSpace(bgApiUrl) ||
+                    string.IsNullOrWhiteSpace(webAppUrls) ||
+                    string.IsNullOrWhiteSpace(dgRoute) ||
+                    string.IsNullOrWhiteSpace(bgRoute))
                 {
                     var sb = new StringBuilder("Config file does not contain required keys: ");
                     if (string.IsNullOrWhiteSpace(serverString))
                         sb.AppendLine("Server");
-                    if (string.IsNullOrWhiteSpace(dgApiUrl))
-                        sb.AppendLine("DungeonApiUrl");
-                    if (string.IsNullOrWhiteSpace(bgApiUrl))
-                        sb.AppendLine("BattlegroundApiUrl");
+                    //if (string.IsNullOrWhiteSpace(dgApiUrl))
+                    //    sb.AppendLine("DungeonApiUrl");
+                    //if (string.IsNullOrWhiteSpace(bgApiUrl))
+                    //    sb.AppendLine("BattlegroundApiUrl");
+                    if (string.IsNullOrWhiteSpace(webAppUrls))
+                        sb.AppendLine("WebAppUrls");
+                    if (string.IsNullOrWhiteSpace(dgRoute))
+                        sb.AppendLine("DungeonsRoute");
+                    if (string.IsNullOrWhiteSpace(bgRoute))
+                        sb.AppendLine("BattlegroundsRoute");
 
-                    logger.Fatal(sb.ToString());
-                    return;
+                    throw new Exception(sb.ToString());
                 }
 
                 CustomServer server;
                 if (IPEndPoint.TryParse(serverString, out var ep))
-                {
                     server = new CustomServer(ep);
-                }
                 else
-                {
-                    logger.Fatal("Could not parse server address.");
-                    return;
-                }
+                    throw new Exception("Could not parse server address.");
+
+                var builder = WebApplication.CreateBuilder();
+                builder.Configuration.SetBasePath(Environment.CurrentDirectory)
+                    .AddJsonFile(Path.Combine(configDir, "appsettings.json"));
+
+                var app = builder.Build();
+                app.UseHttpsRedirection();
+                app.MapGet(dgRoute, GetDungeons);
+                app.MapGet(bgRoute, GetBattlegrounds);
 
                 opCodes = new Dictionary<ushort, string>
                 {
@@ -81,8 +96,8 @@ namespace TeraPartyMonitor
                     { 42469, "S_DEL_INTER_PARTY_MATCH_POOL" },
                     { 21623, "S_MODIFY_INTER_PARTY_MATCH_POOL" },
 
-                    { 23845, "C_REGISTER_PARTY_INFO" },
-                    { 54412, "C_UNREGISTER_PARTY_INFO" },
+                    //{ 23845, "C_REGISTER_PARTY_INFO" },
+                    //{ 54412, "C_UNREGISTER_PARTY_INFO" },
                     //{ 45446, "S_EXIT" },
                 };
 
@@ -94,21 +109,24 @@ namespace TeraPartyMonitor
                 teraSniffer.NewClientConnection += TeraNewConnection;
                 teraSniffer.EndClientConnection += TeraEndConnection;
                 teraSniffer.Enabled = true;
+                logger.Info("Sniffing started.");
 
                 dataPools = new();
-                dataPools.PartyMatchingCollectionChanged += DataPools_MatchingChanged;
+                //dataPools.PartyMatchingCollectionChanged += DataPools_MatchingChanged;
                 messageProcessorFactory = new(dataPools, logger);
 
-                dgRequester = new(dgApiUrl);
-                //dgRequester.RequestSending += DungeonRequester_RequestSending;
-                dgRequester.ResponseReceived += DungeonRequester_ResponseReceived;
+                //dgRequester = new(dgApiUrl);
+                ////dgRequester.RequestSending += DungeonRequester_RequestSending;
+                //dgRequester.ResponseReceived += DungeonRequester_ResponseReceived;
 
-                bgRequester = new(bgApiUrl);
-                //bgRequester.RequestSending += DungeonRequester_RequestSending;
-                bgRequester.ResponseReceived += DungeonRequester_ResponseReceived;
+                //bgRequester = new(bgApiUrl);
+                ////bgRequester.RequestSending += DungeonRequester_RequestSending;
+                //bgRequester.ResponseReceived += DungeonRequester_ResponseReceived;
 
-                var thread = new Thread(new ThreadStart(MainLoop));
-                thread.Start();
+                //var thread = new Thread(new ThreadStart(MainLoop));
+                //thread.Start();
+
+                app.Run(webAppUrls);
             }
             catch (Exception e)
             {
@@ -117,21 +135,41 @@ namespace TeraPartyMonitor
             }
         }
 
-        private static void MainLoop()
-        {
-            logger.Info("Sniffing started.");
-            while (mainLoopflag)
-            {
-                Thread.Sleep(5000);
-            }
-        }
+        //private static void MainLoop()
+        //{
+        //    logger.Info("Sniffing started.");
+        //    while (mainLoopflag)
+        //    {
+        //        Thread.Sleep(5000);
+        //    }
+        //}
 
         private static IConfiguration GetConfig()
         {
             return new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
-                .AddJsonFile(Path.Combine("Config", "config.json"), false)
+                .AddJsonFile(Path.Combine(configDir, "config.json"), false)
                 .Build();
+        }
+
+        private static IEnumerable<DungeonMatchingModel> GetDungeons()
+        {
+            int i = 1;
+            return dataPools.GetPartyMatchings()
+                .Where(m => m.MatchingType == MatchingTypes.Dungeon)
+                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
+                .GroupBy(s => s.instance)
+                .Select(g => new DungeonMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Dungeon)g.Key));
+        }
+
+        private static IEnumerable<BattlegroundMatchingModel> GetBattlegrounds()
+        {
+            int i = 1;
+            return dataPools.GetPartyMatchings()
+                .Where(m => m.MatchingType == MatchingTypes.Battleground)
+                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
+                .GroupBy(s => s.instance)
+                .Select(g => new BattlegroundMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Battleground)g.Key));
         }
 
         #region Event Handlers
@@ -141,7 +179,7 @@ namespace TeraPartyMonitor
             e.Cancel = true;
             teraSniffer.Enabled = false;
             logger.Info("Sniffing stopped.");
-            mainLoopflag = false;
+            //mainLoopflag = false;
         }
 
         private static void DungeonRequester_ResponseReceived(bool success, string? errorMessage)
@@ -155,30 +193,30 @@ namespace TeraPartyMonitor
             logger.Debug(content);
         }
 
-        private async static void DataPools_MatchingChanged(IReadOnlyCollection<PartyMatching> matchings, MatchingTypes type)
-        {
-            int i = 1;
-            var grouping = matchings
-                .Where(m => m.MatchingType == type)
-                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
-                .GroupBy(s => s.instance);
+        //private async static void DataPools_MatchingChanged(IReadOnlyCollection<PartyMatching> matchings, MatchingTypes type)
+        //{
+        //    int i = 1;
+        //    var grouping = matchings
+        //        .Where(m => m.MatchingType == type)
+        //        .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
+        //        .GroupBy(s => s.instance);
 
-            switch (type)
-            {
-                case MatchingTypes.Dungeon:
-                    var dungeons = grouping.Select(g => new DungeonMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Dungeon)g.Key));
-                    await dgRequester.CreateAsync(dungeons);
-                    break;
+        //    switch (type)
+        //    {
+        //        case MatchingTypes.Dungeon:
+        //            var dungeons = grouping.Select(g => new DungeonMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Dungeon)g.Key));
+        //            await dgRequester.CreateAsync(dungeons);
+        //            break;
 
-                case MatchingTypes.Battleground:
-                    var battlegrounds = grouping.Select(g => new BattlegroundMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Battleground)g.Key));
-                    await bgRequester.CreateAsync(battlegrounds);
-                    break;
+        //        case MatchingTypes.Battleground:
+        //            var battlegrounds = grouping.Select(g => new BattlegroundMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Battleground)g.Key));
+        //            await bgRequester.CreateAsync(battlegrounds);
+        //            break;
 
-                default:
-                    throw new MatchingTypesInvalidEnumArgumentException(type);
-            };
-        }
+        //        default:
+        //            throw new MatchingTypesInvalidEnumArgumentException(type);
+        //    };
+        //}
 
         private static void TeraNewConnection(Client client)
         {

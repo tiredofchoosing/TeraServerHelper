@@ -8,7 +8,7 @@ namespace TeraPartyMonitor.MessageProcessor
 {
     internal class CRegisterPartyInfoProcessor : TeraMessageProcessor
     {
-        public CRegisterPartyInfoProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, ILogger logger) 
+        public CRegisterPartyInfoProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, NLog.ILogger logger) 
             : base(message, client, dataPools, logger) { }
 
         public override void Process()
