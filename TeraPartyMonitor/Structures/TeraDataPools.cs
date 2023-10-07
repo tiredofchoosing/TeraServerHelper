@@ -68,6 +68,15 @@ namespace TeraPartyMonitor.Structures
 
         private void PlayerCollection_ItemRemoved(Player player)
         {
+            var dgMatching = GetPartyMatchingByPlayer(player, MatchingTypes.Dungeon);
+            var bgMatching = GetPartyMatchingByPlayer(player, MatchingTypes.Battleground);
+
+            if (dgMatching != null)
+                Remove(dgMatching);
+
+            if (bgMatching != null)
+                Remove(bgMatching);
+
             var party = GetPartyByPlayer(player);
             if (party == null)
                 return;

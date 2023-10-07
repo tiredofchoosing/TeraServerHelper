@@ -30,8 +30,8 @@ namespace TeraCore.Game.Messages
                 var instanceId = reader.ReadUInt32();
                 MatchingInstance instance = MatchingType switch
                 {
-                    MatchingTypes.Dungeon => new Dungeon(instanceId),
-                    MatchingTypes.Battleground => new Battleground(instanceId),
+                    MatchingTypes.Dungeon => InstanceManager.GetDungeon(instanceId),
+                    MatchingTypes.Battleground => InstanceManager.GetBattleground(instanceId),
                     _ => throw new MatchingTypesInvalidEnumArgumentException(MatchingType)
                 };
                 Instances.Add(instance);
