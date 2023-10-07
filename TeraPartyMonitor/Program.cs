@@ -100,6 +100,7 @@ namespace TeraPartyMonitor
                     { 48376, "S_ADD_INTER_PARTY_MATCH_POOL" },
                     { 42469, "S_DEL_INTER_PARTY_MATCH_POOL" },
                     { 21623, "S_MODIFY_INTER_PARTY_MATCH_POOL" },
+                    { 27768, "S_USER_LEVELUP" },
 
                     //{ 23845, "C_REGISTER_PARTY_INFO" },
                     //{ 54412, "C_UNREGISTER_PARTY_INFO" },
@@ -149,39 +150,6 @@ namespace TeraPartyMonitor
         //    }
         //}
 
-        private static IConfiguration GetConfig()
-        {
-            return new ConfigurationBuilder()
-                .SetBasePath(Environment.CurrentDirectory)
-                .AddJsonFile(Path.Combine(configDir, "config.json"), false)
-                .Build();
-        }
-
-        private static IEnumerable<DungeonMatchingModel> GetDungeons()
-        {
-            int i = 1;
-            return dataPools.GetPartyMatchings()
-                .Where(m => m.MatchingType == MatchingTypes.Dungeon)
-                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
-                .GroupBy(s => s.instance)
-                .Select(g => new DungeonMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Dungeon)g.Key));
-        }
-
-        private static IEnumerable<BattlegroundMatchingModel> GetBattlegrounds()
-        {
-            int i = 1;
-            return dataPools.GetPartyMatchings()
-                .Where(m => m.MatchingType == MatchingTypes.Battleground)
-                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
-                .GroupBy(s => s.instance)
-                .Select(g => new BattlegroundMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Battleground)g.Key));
-        }
-
-        private static IEnumerable<Player> GetPlayers()
-        {
-            return dataPools.GetPlayers();
-        }
-
         #region Event Handlers
 
         private static void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
@@ -192,16 +160,16 @@ namespace TeraPartyMonitor
             //mainLoopflag = false;
         }
 
-        private static void DungeonRequester_ResponseReceived(bool success, string? errorMessage)
-        {
-            if (!success)
-                logger.Error(errorMessage);
-        }
+        //private static void DungeonRequester_ResponseReceived(bool success, string? errorMessage)
+        //{
+        //    if (!success)
+        //        logger.Error(errorMessage);
+        //}
 
-        private static void DungeonRequester_RequestSending(StringContent content)
-        {
-            logger.Debug(content);
-        }
+        //private static void DungeonRequester_RequestSending(StringContent content)
+        //{
+        //    logger.Debug(content);
+        //}
 
         //private async static void DataPools_MatchingChanged(IReadOnlyCollection<PartyMatching> matchings, MatchingTypes type)
         //{
@@ -242,31 +210,18 @@ namespace TeraPartyMonitor
 
         private static void TeraMessageReceived(Message message, Client client)
         {
-            bool flag = false;
-            if (message.OpCode == 48376)
-            {
-                logger.Debug($"{client}|S_ADD_INTER_PARTY_MATCH_POOL.");
-                flag = true;
-            }
 
             var msg = messageFactory.Create(message);
             if (msg is UnknownMessage)
-            {
-                if (flag)
-                    logger.Warn($"{client}|UNKNOWN MESSAGE!");
                 return;
-            }
 
             try
             {
-                if (flag)
-                    logger.Debug($"{client}|Start processing S_ADD_INTER_PARTY_MATCH_POOL.");
-
                 ProcessParsedMessage(msg, client);
             }
             catch (Exception e)
             {
-                logger.Error($"Error while processing ParsedMessage\n{e.Message}");
+                logger.Error($"{client}|Error while processing ParsedMessage\n{e.Message}");
             }
         }
 
@@ -276,6 +231,39 @@ namespace TeraPartyMonitor
         {
             var processor = messageProcessorFactory.Create(message, client);
             processor.Process();
+        }
+
+        private static IConfiguration GetConfig()
+        {
+            return new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                .AddJsonFile(Path.Combine(configDir, "config.json"), false)
+                .Build();
+        }
+
+        private static IEnumerable<DungeonMatchingModel> GetDungeons()
+        {
+            int i = 1;
+            return dataPools.GetPartyMatchings()
+                .Where(m => m.MatchingType == MatchingTypes.Dungeon)
+                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
+                .GroupBy(s => s.instance)
+                .Select(g => new DungeonMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Dungeon)g.Key));
+        }
+
+        private static IEnumerable<BattlegroundMatchingModel> GetBattlegrounds()
+        {
+            int i = 1;
+            return dataPools.GetPartyMatchings()
+                .Where(m => m.MatchingType == MatchingTypes.Battleground)
+                .SelectMany(m => m.Instances.Select(instance => (m.MatchingProfiles, instance)))
+                .GroupBy(s => s.instance)
+                .Select(g => new BattlegroundMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Battleground)g.Key));
+        }
+
+        private static IEnumerable<Player> GetPlayers()
+        {
+            return dataPools.GetPlayers();
         }
     }
 }

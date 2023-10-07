@@ -6,7 +6,7 @@ namespace TeraCore.Game.Structures
     {
         public uint PlayerId { get; init; }
         public string Name { get; init; }
-        public byte Level { get; private set; } // TODO increase level
+        public int Level { get; set; }
 
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public PlayerClass Class { get; init; }
@@ -21,7 +21,7 @@ namespace TeraCore.Game.Structures
         {
             PlayerId = playerId;
             Name = name;
-            Level = (byte)level;
+            Level = level;
             Class = playerClass;
             Race = race;
             Gender = gender;
