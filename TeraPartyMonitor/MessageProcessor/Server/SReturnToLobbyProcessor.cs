@@ -14,16 +14,9 @@ namespace TeraPartyMonitor.MessageProcessor
         {
             if (Message is SReturnToLobbyMessage)
             {
-                if (Client.CurrentPlayer != null)
-                {
-                    Logger.Debug($"{Client}|Player logout: {Client.CurrentPlayer}.");
-                    DataPools.Remove(Client.CurrentPlayer);
-                    Client.CurrentPlayer = null;
-                }
-                else
-                    Logger.Warn($"{Client}|Logout without CurrentPlayer property set!");
-
-                return;
+                Logger.Debug($"{Client}|Player logout: {Client.CurrentPlayer}.");
+                DataPools.Remove(Client.CurrentPlayer);
+                Client.CurrentPlayer = null;
             }
         }
     }

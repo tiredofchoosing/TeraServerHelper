@@ -23,9 +23,7 @@ namespace TeraPartyMonitor.MessageProcessor
                     Logger.Debug($"{Client}|Removed PartyInfo: {partyInfo}.");
                 }
                 else
-                    Logger.Debug($"{Client}|No PartyInfo to remove.");
-
-                return;
+                    Logger.Warn($"{Client}|No PartyInfo to remove.");
             }
         }
     }
