@@ -19,8 +19,10 @@ namespace TeraCore.Game.Messages
             reader.BaseStream.Position = nameOffset - 4;
             Name = reader.ReadTeraString();
 
-            Class = (PlayerClass)(raceGenderClass % 100 - 1);
-            Race = (PlayerRace)((raceGenderClass - 10100) / 200);
+            raceGenderClass -= 10101;
+            Class = (PlayerClass)(raceGenderClass % 100);
+            Race = (PlayerRace)(raceGenderClass / 200);
+            Gender = (PlayerGender)((raceGenderClass % 200) / 100);
         }
 
         //public EntityId Id { get; private set; }
@@ -30,5 +32,6 @@ namespace TeraCore.Game.Messages
         public string Name { get; private set; }
         public PlayerClass Class { get; init; }
         public PlayerRace Race { get; init; }
+        public PlayerGender Gender { get; init; }
     }
 }

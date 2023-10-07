@@ -16,9 +16,9 @@ namespace TeraPartyMonitor.MessageProcessor
             {
                 if (Client.CurrentPlayer != null)
                 {
+                    Logger.Debug($"{Client}|Player logout: {Client.CurrentPlayer}.");
                     DataPools.Remove(Client.CurrentPlayer);
                     Client.CurrentPlayer = null;
-                    Logger.Debug($"{Client}|Player logout: {Client.CurrentPlayer}.");
                 }
                 else
                     Logger.Warn($"{Client}|Logout without CurrentPlayer property set!");

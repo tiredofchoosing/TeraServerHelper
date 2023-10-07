@@ -15,7 +15,7 @@ namespace TeraPartyMonitor
 {
     internal class Program
     {
-        static CustomTeraSniffer teraSniffer;
+        static ICustomTeraSniffer teraSniffer;
         static Dictionary<ushort, string> opCodes;
         static OpCodeNamer opCodeNamer;
         static MessageFactory messageFactory;
@@ -109,7 +109,7 @@ namespace TeraPartyMonitor
                 opCodeNamer = new(opCodes);
                 messageFactory = new(opCodeNamer);
 
-                teraSniffer = new(server);
+                teraSniffer = new CustomTeraSniffer(server);
                 teraSniffer.NewClientConnection += TeraNewConnection;
                 teraSniffer.EndClientConnection += TeraEndConnection;
                 teraSniffer.MessageClientReceived += TeraMessageReceived;

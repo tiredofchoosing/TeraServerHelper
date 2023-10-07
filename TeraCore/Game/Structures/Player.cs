@@ -14,13 +14,17 @@ namespace TeraCore.Game.Structures
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public PlayerRace Race { get; init; }
 
-        public Player(uint playerId, string name, int level, PlayerClass playerClass, PlayerRace race)
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public PlayerGender Gender { get; init; }
+
+        public Player(uint playerId, string name, int level, PlayerClass playerClass, PlayerRace race, PlayerGender gender)
         {
             PlayerId = playerId;
             Name = name;
             Level = (byte)level;
             Class = playerClass;
             Race = race;
+            Gender = gender;
         }
 
         public override string ToString()
