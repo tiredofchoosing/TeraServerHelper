@@ -14,8 +14,8 @@ namespace TeraPartyMonitor.MessageProcessor
         {
             if (Message is SUserLevelupMessage m)
             {
-                Logger.Debug($"{Client}|Player level up: {Client.CurrentPlayer}.");
                 Client.CurrentPlayer.Level = m.Level;
+                Logger.Debug($"{Client}|Player level up: {Client.CurrentPlayer}.");
             }
         }
     }
