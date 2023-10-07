@@ -15,7 +15,7 @@ namespace TeraPartyMonitor.MessageProcessor
         {
             if (Message is SLoginMessage m)
             {
-                var player = new Player(m.PlayerId, m.Name, m.Level, m.Class);
+                var player = new Player(m.PlayerId, m.Name, m.Level, m.Class, m.Race);
                 DataPools.Add(player);
                 Client.CurrentPlayer = player;
                 Logger.Debug($"{Client}|Player login: {player}.");

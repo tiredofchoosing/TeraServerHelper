@@ -20,6 +20,7 @@ namespace TeraCore.Game.Messages
             Name = reader.ReadTeraString();
 
             Class = (PlayerClass)(raceGenderClass % 100 - 1);
+            Race = (PlayerRace)((raceGenderClass - 10100) / 200);
         }
 
         //public EntityId Id { get; private set; }
@@ -27,6 +28,7 @@ namespace TeraCore.Game.Messages
         public uint PlayerId { get; private set; }
         public int Level { get; private set; }
         public string Name { get; private set; }
-        public PlayerClass Class { get; }
+        public PlayerClass Class { get; init; }
+        public PlayerRace Race { get; init; }
     }
 }

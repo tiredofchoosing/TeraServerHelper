@@ -2,5 +2,6 @@
   "Server": "178.250.154.7:7801",
   "WebAppUrls": "https://*:55555",
   "DungeonsRoute": "/dungeons",
-  "BattlegroundsRoute": "/battlegrounds"
+  "BattlegroundsRoute": "/battlegrounds",
+  "PlayersRoute": "/players"
 }

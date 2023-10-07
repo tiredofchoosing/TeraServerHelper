@@ -48,13 +48,15 @@ namespace TeraPartyMonitor
                 var webAppUrls = config["WebAppUrls"];
                 var dgRoute = config["DungeonsRoute"];
                 var bgRoute = config["BattlegroundsRoute"];
+                var playersRoute = config["PlayersRoute"];
 
                 if (string.IsNullOrWhiteSpace(serverString) ||
                     //string.IsNullOrWhiteSpace(dgApiUrl) ||
                     //string.IsNullOrWhiteSpace(bgApiUrl) ||
                     string.IsNullOrWhiteSpace(webAppUrls) ||
                     string.IsNullOrWhiteSpace(dgRoute) ||
-                    string.IsNullOrWhiteSpace(bgRoute))
+                    string.IsNullOrWhiteSpace(bgRoute) ||
+                    string.IsNullOrWhiteSpace(playersRoute))
                 {
                     var sb = new StringBuilder("Config file does not contain required keys: ");
                     if (string.IsNullOrWhiteSpace(serverString))
@@ -69,6 +71,8 @@ namespace TeraPartyMonitor
                         sb.AppendLine("DungeonsRoute");
                     if (string.IsNullOrWhiteSpace(bgRoute))
                         sb.AppendLine("BattlegroundsRoute");
+                    if (string.IsNullOrWhiteSpace(playersRoute))
+                        sb.AppendLine("PlayersRoute");
 
                     throw new Exception(sb.ToString());
                 }
@@ -87,6 +91,7 @@ namespace TeraPartyMonitor
                 app.UseHttpsRedirection();
                 app.MapGet(dgRoute, GetDungeons);
                 app.MapGet(bgRoute, GetBattlegrounds);
+                app.MapGet(playersRoute, GetPlayers);
 
                 opCodes = new Dictionary<ushort, string>
                 {
@@ -105,9 +110,9 @@ namespace TeraPartyMonitor
                 messageFactory = new(opCodeNamer);
 
                 teraSniffer = new(server);
-                teraSniffer.MessageClientReceived += TeraMessageReceived;
                 teraSniffer.NewClientConnection += TeraNewConnection;
                 teraSniffer.EndClientConnection += TeraEndConnection;
+                teraSniffer.MessageClientReceived += TeraMessageReceived;
                 teraSniffer.Enabled = true;
                 logger.Info("Sniffing started.");
 
@@ -172,6 +177,11 @@ namespace TeraPartyMonitor
                 .Select(g => new BattlegroundMatchingModel(i++, g.Select(p => p.MatchingProfiles), (Battleground)g.Key));
         }
 
+        private static IEnumerable<Player> GetPlayers()
+        {
+            return dataPools.GetPlayers();
+        }
+
         #region Event Handlers
 
         private static void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
@@ -232,12 +242,26 @@ namespace TeraPartyMonitor
 
         private static void TeraMessageReceived(Message message, Client client)
         {
+            bool flag = false;
+            if (message.OpCode == 48376)
+            {
+                logger.Debug($"{client}|S_ADD_INTER_PARTY_MATCH_POOL.");
+                flag = true;
+            }
+
             var msg = messageFactory.Create(message);
             if (msg is UnknownMessage)
+            {
+                if (flag)
+                    logger.Warn($"{client}|UNKNOWN MESSAGE!");
                 return;
+            }
 
             try
             {
+                if (flag)
+                    logger.Debug($"{client}|Start processing S_ADD_INTER_PARTY_MATCH_POOL.");
+
                 ProcessParsedMessage(msg, client);
             }
             catch (Exception e)

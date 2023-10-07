@@ -100,6 +100,10 @@ namespace TeraPartyMonitor.Structures
         {
             return PartyMatchingCollection.AsReadOnly();
         }
+        public IReadOnlyCollection<Player> GetPlayers()
+        {
+            return PlayerCollection.AsReadOnly();
+        }
 
         public Party? GetPartyByPlayer(Player player)
         {
