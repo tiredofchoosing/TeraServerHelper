@@ -15,6 +15,11 @@ namespace TeraCore.PacketLog
         private volatile int _pPrev;
         public event Action<int, int> Resync;
 
+        ~BlockSplitter()
+        {
+            _buffer.Close();
+        }
+
         protected virtual void OnBlockFinished(byte[] block)
         {
             BlockFinished?.Invoke(block);

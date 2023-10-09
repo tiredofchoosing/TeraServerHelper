@@ -29,6 +29,8 @@ namespace TeraCore.Game.Messages
                 var name = reader.ReadTeraString();
                 Modifiers.Add((name, isLeader));
             }
+
+            reader.Close();
         }
 
         public IList<(string, bool)> Modifiers { get; init; } = new List<(string, bool)>();

@@ -71,8 +71,8 @@ namespace TeraCore.Sniffing
             ClientToServer(_client.ReadBytes((int) (_client.Length - _client.Position)));
             ServerToClient(_server.ReadBytes((int) (_server.Length - _server.Position)));
 
-            _client = null;
-            _server = null;
+            _client.Close();
+            _server.Close();
         }
 
         public void Skip(MessageDirection direction, int needToSkip)

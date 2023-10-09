@@ -24,6 +24,11 @@ namespace TeraCore.Game
             OpCodeName = opCodeNamer.GetName(message.OpCode);
         }
 
+        ~TeraMessageReader()
+        {
+            Close();
+        }
+
         //public EntityId ReadEntityId()
         //{
         //    var id = ReadUInt64();

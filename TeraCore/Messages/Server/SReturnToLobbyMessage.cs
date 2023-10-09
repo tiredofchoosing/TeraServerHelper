@@ -4,6 +4,7 @@
     {
         internal SReturnToLobbyMessage(TeraMessageReader reader) : base(reader)
         {
+            reader.Close();
         }
     }
 }

@@ -16,6 +16,14 @@ namespace TeraCore.Sniffing
             _serverSplitter.Resync += ServerResync;
         }
 
+        ~MessageSplitter()
+        {
+            _clientSplitter.BlockFinished -= ClientBlockFinished;
+            _serverSplitter.BlockFinished -= ServerBlockFinished;
+            _clientSplitter.Resync -= ClientResync;
+            _serverSplitter.Resync -= ServerResync;
+        }
+
         public event Action<Message> MessageReceived;
         public event Action<MessageDirection, int, int> Resync;
 

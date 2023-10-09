@@ -16,7 +16,7 @@ namespace TeraCore.Game
             if (_opCodeNames.TryGetValue(opCode, out name))
                 return name;
             else
-                return opCode.ToString("X4");
+                return string.Intern(opCode.ToString("X4"));
         }
 
         public OpCodeNamer(IEnumerable<KeyValuePair<ushort, string>> names)

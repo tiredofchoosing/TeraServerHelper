@@ -6,6 +6,8 @@
         {
             reader.Skip(8); // EntityId
             Level = reader.ReadInt16();
+
+            reader.Close();
         }
 
         public int Level { get; init; }

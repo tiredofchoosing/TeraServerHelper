@@ -1,4 +1,7 @@
-﻿namespace TeraCore.Game.Structures
+﻿using System.Linq;
+using System.Text;
+
+namespace TeraCore.Game.Structures
 {
     public class PartyMatching
     {
@@ -15,7 +18,8 @@
 
         public override string ToString()
         {
-            return $"Type: {MatchingType}, Players count: {MatchingProfiles.Count}, Instances count: {Instances.Count}";
+            var names = string.Join(' ', MatchingProfiles.Select(p => p.Name));
+            return $"Type: {MatchingType}, Players: {names}, Instances count: {Instances.Count}";
         }
     }
 }

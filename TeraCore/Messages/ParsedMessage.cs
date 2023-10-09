@@ -9,18 +9,18 @@ namespace TeraCore.Game.Messages
         internal ParsedMessage(TeraMessageReader reader)
             : base(reader.Message.Time, reader.Message.Direction, reader.Message.Data)
         {
-            Raw = reader.Message.Payload.Array;
+            //Raw = reader.Message.Payload.Array;
             OpCodeName = reader.OpCodeName;
         }
 
-        public byte[] Raw { get; protected set; }
+        //public byte[] Raw { get; protected set; }
 
         public string OpCodeName { get; }
 
-        public void PrintRaw()
-        {
-            Debug.WriteLine(OpCodeName + " : " + OpCode + " : " + Direction + " : Size " + Payload.Count + " : Time " + Time);
-            Debug.WriteLine(BitConverter.ToString(Payload.Array));
-        }
+        //public void PrintRaw()
+        //{
+        //    Debug.WriteLine(OpCodeName + " : " + OpCode + " : " + Direction + " : Size " + Payload.Count + " : Time " + Time);
+        //    Debug.WriteLine(BitConverter.ToString(Payload.Array));
+        //}
     }
 }

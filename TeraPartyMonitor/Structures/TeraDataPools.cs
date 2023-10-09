@@ -196,6 +196,21 @@ namespace TeraPartyMonitor.Structures
             }
         }
 
+        public Client? GetClientByPlayer(Player player)
+        {
+            if (player == null)
+                throw new ArgumentNullException(nameof(player));
+
+            try
+            {
+                return ClientCollection.SingleOrDefault(p => p.CurrentPlayer != null && p.CurrentPlayer.Equals(player));
+            }
+            catch
+            {
+                throw new Exception($"There are more than one client with the same CurrentPlayer: {player}");
+            }
+        }
+
         public void Add(Client client)
         {
             Add(ClientCollection, client);
@@ -203,6 +218,10 @@ namespace TeraPartyMonitor.Structures
 
         public void Add(Player player)
         {
+            //var old = GetPlayerByName(player.Name);
+            //if (old != null)
+            //    Replace(old, player);
+
             Add(PlayerCollection, player);
         }
 
@@ -245,6 +264,11 @@ namespace TeraPartyMonitor.Structures
         {
             Remove(PartyMatchingCollection, partyMatching);
         }
+
+        //public void Replace(Player oldPlayer, Player newPlayer)
+        //{
+        //    Replace(PlayerCollection, oldPlayer, newPlayer);
+        //}
 
         public void Replace(PartyInfo oldPartyInfo, PartyInfo newPartyInfo)
         {

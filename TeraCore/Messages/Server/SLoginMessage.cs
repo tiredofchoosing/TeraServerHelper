@@ -23,6 +23,8 @@ namespace TeraCore.Game.Messages
             Class = (PlayerClass)(raceGenderClass % 100);
             Race = (PlayerRace)(raceGenderClass / 200);
             Gender = (PlayerGender)((raceGenderClass % 200) / 100);
+
+            reader.Close();
         }
 
         //public EntityId Id { get; private set; }

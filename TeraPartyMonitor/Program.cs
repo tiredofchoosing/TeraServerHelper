@@ -5,7 +5,6 @@ using TeraCore.Game;
 using TeraCore.Game.Messages;
 using TeraCore.Game.Structures;
 using TeraCore.Sniffing;
-using TeraPartyMonitor.DataSender;
 using TeraPartyMonitor.DataSender.Models;
 using TeraPartyMonitor.MessageProcessor;
 using TeraPartyMonitor.Structures;
@@ -26,7 +25,7 @@ namespace TeraPartyMonitor
         static TeraDataPools dataPools;
         static IConfiguration config;
 
-        //static bool mainLoopflag = true;
+        static bool mainLoopflag = true;
         static readonly string configDir = "Config";
 
         static void Main(string[] args)
@@ -114,6 +113,7 @@ namespace TeraPartyMonitor
                 teraSniffer.NewClientConnection += TeraNewConnection;
                 teraSniffer.EndClientConnection += TeraEndConnection;
                 teraSniffer.MessageClientReceived += TeraMessageReceived;
+                teraSniffer.Warning += TeraWarning;
                 teraSniffer.Enabled = true;
                 logger.Info("Sniffing started.");
 
@@ -129,8 +129,8 @@ namespace TeraPartyMonitor
                 ////bgRequester.RequestSending += DungeonRequester_RequestSending;
                 //bgRequester.ResponseReceived += DungeonRequester_ResponseReceived;
 
-                //var thread = new Thread(new ThreadStart(MainLoop));
-                //thread.Start();
+                var thread = new Thread(new ThreadStart(MainLoop));
+                thread.Start();
 
                 app.Run(webAppUrls);
             }
@@ -141,14 +141,20 @@ namespace TeraPartyMonitor
             }
         }
 
-        //private static void MainLoop()
-        //{
-        //    logger.Info("Sniffing started.");
-        //    while (mainLoopflag)
-        //    {
-        //        Thread.Sleep(5000);
-        //    }
-        //}
+        private static void MainLoop()
+        {
+            int i = 0;
+            while (mainLoopflag)
+            {
+                if (i > 6)
+                {
+                    logger.Debug($"MainLoop|Sniffer enabled: {teraSniffer.Enabled}");
+                    i = 0;
+                }
+                i++;
+                Thread.Sleep(5000);
+            }
+        }
 
         #region Event Handlers
 
@@ -157,7 +163,7 @@ namespace TeraPartyMonitor
             e.Cancel = true;
             teraSniffer.Enabled = false;
             logger.Info("Sniffing stopped.");
-            //mainLoopflag = false;
+            mainLoopflag = false;
         }
 
         //private static void DungeonRequester_ResponseReceived(bool success, string? errorMessage)
@@ -196,6 +202,11 @@ namespace TeraPartyMonitor
         //    };
         //}
 
+        private static void TeraWarning(string obj)
+        {
+            logger.Warn("Sniffer warning|" + obj);
+        }
+
         private static void TeraNewConnection(Client client)
         {
             dataPools.Add(client);
@@ -210,9 +221,8 @@ namespace TeraPartyMonitor
 
         private static void TeraMessageReceived(Message message, Client client)
         {
-
             var msg = messageFactory.Create(message);
-            if (msg is UnknownMessage)
+            if (msg is null)
                 return;
 
             try
@@ -221,7 +231,7 @@ namespace TeraPartyMonitor
             }
             catch (Exception e)
             {
-                logger.Error($"{client}|Error while processing ParsedMessage\n{e.Message}");
+                logger.Error($"{client}|Error while processing {msg.GetType()}\n{e.Message}");
             }
         }
 

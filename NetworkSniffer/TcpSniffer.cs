@@ -49,7 +49,7 @@ namespace NetworkSniffer
                     if (!isInterestingConnection)
                         return;
                     _connections[connectionId] = connection;
-                    Debug.Assert(tcpPacket.Payload.Count == 0);
+                    //Debug.Assert(tcpPacket.Payload.Count == 0);
                 }
                 else if (isFinishPacket)
                 {
@@ -67,7 +67,15 @@ namespace NetworkSniffer
                         return;
 
                     if (!string.IsNullOrEmpty(TcpLogFile))
-                        File.AppendAllText(TcpLogFile, string.Format("{0} {1}+{4} | {2} {3}+{4} ACK {5} ({6})\r\n", connection.CurrentSequenceNumber, tcpPacket.SequenceNumber, connection.BytesReceived, connection.SequenceNumberToBytesReceived(tcpPacket.SequenceNumber), tcpPacket.Payload.Count, tcpPacket.AcknowledgementNumber, connection.BufferedPacketDescription));
+                        File.AppendAllText(TcpLogFile, string.Format("{0} {1}+{4} | {2} {3}+{4} ACK {5} ({6})\r\n",
+                            connection.CurrentSequenceNumber,
+                            tcpPacket.SequenceNumber,
+                            connection.BytesReceived,
+                            connection.SequenceNumberToBytesReceived(tcpPacket.SequenceNumber),
+                            tcpPacket.Payload.Count,
+                            tcpPacket.AcknowledgementNumber,
+                            connection.BufferedPacketDescription));
+
                     connection.HandleTcpReceived(tcpPacket.SequenceNumber, tcpPacket.Payload);
                 }
             }

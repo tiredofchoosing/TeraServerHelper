@@ -92,15 +92,15 @@ namespace TeraSniffing
                 var dst = connection.Destination;
                 var src = connection.Source;
 
-                bool isInteresting = _server.EndPoint.Equals(src); ;// || _server.EndPoint.Equals(dst);
-                if (!isInteresting)
+                if (_server.EndPoint.Equals(src) || _server.EndPoint.Equals(dst))
+                    connection.DataReceived -= HandleTcpDataReceived;
+
+                if (!_server.EndPoint.Equals(src))
                     return;
 
                 var clientEndPoint = GetClientEndPoint(connection);
                 var client = _clients[clientEndPoint];
                 _clients.Remove(clientEndPoint);
-
-                connection.DataReceived -= HandleTcpDataReceived;
 
                 if (_decrypters.ContainsKey(clientEndPoint))
                 {
@@ -115,6 +115,7 @@ namespace TeraSniffing
                 }
 
                 OnEndClientConnection(client);
+                GC.Collect();
             }
         }
 
