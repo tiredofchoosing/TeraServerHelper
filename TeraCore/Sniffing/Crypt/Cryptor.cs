@@ -1,7 +1,5 @@
 ﻿// Unknown Author and License
 
-using System;
-
 namespace TeraCore.Sniffing.Crypt
 {
     public class Cryptor
@@ -26,7 +24,7 @@ namespace TeraCore.Sniffing.Crypt
             var result = new byte[680];
 
             for (var i = 0; i < 680; i++)
-                result[i] = src[i%128];
+                result[i] = src[i % 128];
 
             result[0] = 128;
 
@@ -40,17 +38,17 @@ namespace TeraCore.Sniffing.Crypt
             {
                 var sha = Sha.Digest(buf);
                 for (var j = 0; j < 5; j++)
-                    Buffer.BlockCopy(BitConverter.GetBytes(sha[j]), 0, buf, i + j*4, 4);
+                    Buffer.BlockCopy(BitConverter.GetBytes(sha[j]), 0, buf, i + j * 4, 4);
             }
 
             for (var i = 0; i < 220; i += 4)
-                _key[0].Buffer[i/4] = BitConverter.ToUInt32(buf, i);
+                _key[0].Buffer[i / 4] = BitConverter.ToUInt32(buf, i);
 
             for (var i = 0; i < 228; i += 4)
-                _key[1].Buffer[i/4] = BitConverter.ToUInt32(buf, 220 + i);
+                _key[1].Buffer[i / 4] = BitConverter.ToUInt32(buf, 220 + i);
 
             for (var i = 0; i < 232; i += 4)
-                _key[2].Buffer[i/4] = BitConverter.ToUInt32(buf, 448 + i);
+                _key[2].Buffer[i / 4] = BitConverter.ToUInt32(buf, 448 + i);
         }
 
         public void ApplyCryptor(byte[] buf, int size)
@@ -59,7 +57,7 @@ namespace TeraCore.Sniffing.Crypt
             if (pre != 0)
             {
                 for (var j = 0; j < pre; j++)
-                    buf[j] ^= (byte) (_changeData >> (8*(4 - _changeLen + j)));
+                    buf[j] ^= (byte)(_changeData >> (8 * (4 - _changeLen + j)));
 
                 _changeLen -= pre;
                 size -= pre;
@@ -79,13 +77,13 @@ namespace TeraCore.Sniffing.Crypt
                         var t3 = t1 <= t2 ? t1 : t2;
                         k.Sum = t1 + t2;
                         k.Key = t3 > k.Sum ? 1 : 0;
-                        k.Pos1 = (k.Pos1 + 1)%k.Size;
-                        k.Pos2 = (k.Pos2 + 1)%k.Size;
+                        k.Pos1 = (k.Pos1 + 1) % k.Size;
+                        k.Pos2 = (k.Pos2 + 1) % k.Size;
                     }
-                    buf[i] ^= (byte) k.Sum;
-                    buf[i + 1] ^= (byte) (k.Sum >> 8);
-                    buf[i + 2] ^= (byte) (k.Sum >> 16);
-                    buf[i + 3] ^= (byte) (k.Sum >> 24);
+                    buf[i] ^= (byte)k.Sum;
+                    buf[i + 1] ^= (byte)(k.Sum >> 8);
+                    buf[i + 2] ^= (byte)(k.Sum >> 16);
+                    buf[i + 3] ^= (byte)(k.Sum >> 24);
                 }
             }
 
@@ -104,14 +102,14 @@ namespace TeraCore.Sniffing.Crypt
                         var t3 = t1 <= t2 ? t1 : t2;
                         k.Sum = t1 + t2;
                         k.Key = t3 > k.Sum ? 1 : 0;
-                        k.Pos1 = (k.Pos1 + 1)%k.Size;
-                        k.Pos2 = (k.Pos2 + 1)%k.Size;
+                        k.Pos1 = (k.Pos1 + 1) % k.Size;
+                        k.Pos2 = (k.Pos2 + 1) % k.Size;
                     }
-                    _changeData ^= (int) k.Sum;
+                    _changeData ^= (int)k.Sum;
                 }
 
                 for (var j = 0; j < remain; j++)
-                    buf[size + pre - remain + j] ^= (byte) (_changeData >> (j*8));
+                    buf[size + pre - remain + j] ^= (byte)(_changeData >> (j * 8));
 
                 _changeLen = 4 - remain;
             }

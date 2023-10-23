@@ -1,7 +1,5 @@
 ﻿// Unknown Author and License
 
-using System;
-
 namespace TeraCore.Sniffing.Crypt
 {
     internal class Utils
@@ -11,7 +9,7 @@ namespace TeraCore.Sniffing.Crypt
             var result = new byte[Math.Min(key1.Length, key2.Length)];
 
             for (var i = 0; i < result.Length; i++)
-                result[i] = (byte) (key1[i] ^ key2[i]);
+                result[i] = (byte)(key1[i] ^ key2[i]);
 
             return result;
         }

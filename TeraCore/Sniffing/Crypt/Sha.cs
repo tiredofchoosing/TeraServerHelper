@@ -87,17 +87,15 @@
             int t; // Loop counter
             ulong temp; // Temporary word value
             var w = new ulong[80]; // Word sequence
-            // ReSharper disable JoinDeclarationAndInitializer
             ulong a, b, c, d, e; // Word buffers
-            // ReSharper restore JoinDeclarationAndInitializer
 
             // Initialize the first 16 words in the array W
             for (t = 0; t < 16; t++)
             {
-                w[t] = (ulong) MessageBlock[t*4] << 24;
-                w[t] |= (ulong) MessageBlock[t*4 + 1] << 16;
-                w[t] |= (ulong) MessageBlock[t*4 + 2] << 8;
-                w[t] |= MessageBlock[t*4 + 3];
+                w[t] = (ulong)MessageBlock[t * 4] << 24;
+                w[t] |= (ulong)MessageBlock[t * 4 + 1] << 16;
+                w[t] |= (ulong)MessageBlock[t * 4 + 2] << 8;
+                w[t] |= MessageBlock[t * 4 + 3];
             }
 
             for (t = 16; t < 80; t++)
@@ -153,11 +151,11 @@
                 a = temp;
             }
 
-            MessageDigest[0] = (uint) ((MessageDigest[0] + a) & 0xFFFFFFFF);
-            MessageDigest[1] = (uint) ((MessageDigest[1] + b) & 0xFFFFFFFF);
-            MessageDigest[2] = (uint) ((MessageDigest[2] + c) & 0xFFFFFFFF);
-            MessageDigest[3] = (uint) ((MessageDigest[3] + d) & 0xFFFFFFFF);
-            MessageDigest[4] = (uint) ((MessageDigest[4] + e) & 0xFFFFFFFF);
+            MessageDigest[0] = (uint)((MessageDigest[0] + a) & 0xFFFFFFFF);
+            MessageDigest[1] = (uint)((MessageDigest[1] + b) & 0xFFFFFFFF);
+            MessageDigest[2] = (uint)((MessageDigest[2] + c) & 0xFFFFFFFF);
+            MessageDigest[3] = (uint)((MessageDigest[3] + d) & 0xFFFFFFFF);
+            MessageDigest[4] = (uint)((MessageDigest[4] + e) & 0xFFFFFFFF);
 
             MessageBlockIndex = 0;
         }
@@ -195,14 +193,14 @@
             }
 
             // Store the message length as the last 8 octets
-            MessageBlock[56] = (byte) (LengthHigh >> 24);
-            MessageBlock[57] = (byte) (LengthHigh >> 16);
-            MessageBlock[58] = (byte) (LengthHigh >> 8);
-            MessageBlock[59] = (byte) LengthHigh;
-            MessageBlock[60] = (byte) (LengthLow >> 24);
-            MessageBlock[61] = (byte) (LengthLow >> 16);
-            MessageBlock[62] = (byte) (LengthLow >> 8);
-            MessageBlock[63] = (byte) LengthLow;
+            MessageBlock[56] = (byte)(LengthHigh >> 24);
+            MessageBlock[57] = (byte)(LengthHigh >> 16);
+            MessageBlock[58] = (byte)(LengthHigh >> 8);
+            MessageBlock[59] = (byte)LengthHigh;
+            MessageBlock[60] = (byte)(LengthLow >> 24);
+            MessageBlock[61] = (byte)(LengthLow >> 16);
+            MessageBlock[62] = (byte)(LengthLow >> 8);
+            MessageBlock[63] = (byte)LengthLow;
 
             ProcessMessageBlock();
         }
