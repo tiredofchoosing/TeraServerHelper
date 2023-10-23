@@ -1,21 +1,19 @@
 ﻿// Copyright (c) CodesInChaos
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using PacketDotNet;
+
 namespace NetworkSniffer
 {
     public abstract class IpSniffer
     {
-        public event Action<ArraySegment<byte>> PacketReceived;
-
-        protected void OnPacketReceived(ArraySegment<byte> data)
-        {
-            PacketReceived?.Invoke(data);
-        }
-
         private bool _enabled;
+
+        public event Action<IPv4Packet>? PacketReceived;
+
         public bool Enabled
         {
-            get { return _enabled; }
+            get => _enabled;
             set
             {
                 if (_enabled != value)
@@ -24,6 +22,11 @@ namespace NetworkSniffer
                     _enabled = value;
                 }
             }
+        }
+
+        protected virtual void OnPacketReceived(IPv4Packet data)
+        {
+            PacketReceived?.Invoke(data);
         }
 
         protected abstract void SetEnabled(bool value);

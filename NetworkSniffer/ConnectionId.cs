@@ -1,22 +1,29 @@
-﻿// Copyright (c) CodesInChaos
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿using System.Net;
 
 namespace NetworkSniffer
 {
     internal struct ConnectionId : IEquatable<ConnectionId>
     {
-        public readonly EndpointIpv4 Source;
-        public readonly EndpointIpv4 Destination;
+        public readonly IPEndPoint Source;
+        public readonly IPEndPoint Destination;
 
-        public ConnectionId(uint sourceIp, ushort sourcePort, uint destinationIp, ushort destinationPort)
+        public ConnectionId(IPAddress sourceIp, ushort sourcePort, IPAddress destinationIp, ushort destinationPort)
         {
-            Source = new EndpointIpv4(sourceIp, sourcePort);
-            Destination = new EndpointIpv4(destinationIp, destinationPort);
+            Source = new IPEndPoint(sourceIp, sourcePort);
+            Destination = new IPEndPoint(destinationIp, destinationPort);
         }
+
+        public ConnectionId(IPEndPoint source, IPEndPoint destination)
+        {
+            Source = source;
+            Destination = destination;
+        }
+
+        public ConnectionId Reverse => new ConnectionId(Destination, Source);
 
         public static bool operator ==(ConnectionId x, ConnectionId y)
         {
-            return (x.Source == y.Source) && (x.Destination == y.Destination);
+            return x.Source.Equals(y.Source) && x.Destination.Equals(y.Destination);
         }
 
         public static bool operator !=(ConnectionId x, ConnectionId y)
@@ -29,12 +36,12 @@ namespace NetworkSniffer
             return this == other;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (obj is ConnectionId)
-                return Equals((ConnectionId)obj);
-            else
-                return false;
+            if (obj is ConnectionId id)
+                return Equals(id);
+
+            return false;
         }
 
         public override int GetHashCode()
@@ -44,7 +51,7 @@ namespace NetworkSniffer
 
         public override string ToString()
         {
-            return string.Format("{0} -> {1}", Source, Destination);
+            return $"{Source} -> {Destination}";
         }
     }
 }

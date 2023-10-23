@@ -1,32 +1,44 @@
 ﻿// Copyright (c) CodesInChaos
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
 using PacketDotNet;
+using PacketDotNet.Utils;
 using SharpPcap;
 using SharpPcap.LibPcap;
 
 namespace NetworkSniffer
 {
-    // Only works when WinPcap is installed
     public class IpSnifferWinPcap : IpSniffer
     {
-        private readonly string _filter;
-        private LibPcapLiveDeviceList _devices;
+        private readonly string _pcapFilter;
+        private readonly int? _bufferSize;
+        private readonly IEnumerable<LibPcapLiveDevice> _devices;
         private volatile uint _droppedPackets;
         private volatile uint _interfaceDroppedPackets;
+        private DateTime _nextCheck;
 
-        public IpSnifferWinPcap(string filter)
+        public event Action<string>? Warning;
+
+        public IpSnifferWinPcap(string pcapFilter, IEnumerable<string>? deviceFilters = null)
         {
-            _filter = filter;
+            var devices = LibPcapLiveDeviceList.Instance;
+
+            if (deviceFilters != null && deviceFilters.Any())
+                _devices = devices.Where(d => deviceFilters.Any(f => d.Description.Contains(f)));
+            else
+                _devices = devices;
+
+            if (_devices == null || !_devices.Any())
+                throw new Exception("Pcap device list is empty!");
+
+            _pcapFilter = pcapFilter;
+            _bufferSize = 1 << 24;
         }
 
         public IEnumerable<string> Status()
         {
-            return _devices.Select(device => string.Format("Device {0} {1} {2}\r\n{3}", device.LinkType, device.Opened ? "Open" : "Closed", device.LastError, device));
+            return _devices.Select(device => $"Device {device.LinkType} {(device.Opened ? "Open" : "Closed")} {device.LastError}\r\n{device}");
         }
-
-        public int? BufferSize { get; set; }
 
         protected override void SetEnabled(bool value)
         {
@@ -36,72 +48,103 @@ namespace NetworkSniffer
                 Finish();
         }
 
-        private static bool IsInteresting(LibPcapLiveDevice device)
-        {
-            return true;
-        }
-
         private void Start()
         {
-            Debug.Assert(_devices == null);
-            try
+            foreach (var device in _devices)
             {
-                _devices = LibPcapLiveDeviceList.New();
-            }
-            catch (DllNotFoundException ex)
-            {
-                throw new NetworkSniffingException("WinPcap is not installed", ex);
-            }
-            var interestingDevices = _devices.Where(IsInteresting);
-            foreach (var device in interestingDevices)
-            {
-                device.OnPacketArrival += device_OnPacketArrival;
-                device.Open(DeviceModes.Promiscuous, 1000);
-                device.Filter = _filter;
-                //if (BufferSize != null)
-                //    device.KernelBufferSize = (uint)BufferSize.Value;
+                device.OnPacketArrival += PacketArrivalHandler;
+
+                try
+                {
+                    var config = new DeviceConfiguration
+                    {
+                        Mode = DeviceModes.Promiscuous,
+                        BufferSize = _bufferSize,
+                        ReadTimeout = 100,
+                        Immediate = true,
+                    };
+                    device.Open(config);
+                }
+                catch
+                {
+                    device.OnPacketArrival -= PacketArrivalHandler;
+                    continue;
+                }
+                device.Filter = _pcapFilter;
                 device.StartCapture();
             }
+
+            if (!_devices.Any(d => d.Opened))
+                throw new Exception("No pcap device was opened!");
         }
 
         private void Finish()
         {
-            Debug.Assert(_devices != null);
-            foreach (var device in _devices.Where(device => device.Opened))
+            foreach (var device in _devices.Where(d => d.Opened))
             {
-                device.StopCapture();
-                device.Close();
+                try
+                {
+                    device.StopCapture();
+                }
+                //catch
+                //{
+                //    //ignored
+                //    //SharpPcap.PcapException: captureThread was aborted after 00:00:02
+                //    //it's normal when there is no traffic while stopping
+                //}
+                finally
+                {
+                    device.Close();
+                    device.OnPacketArrival -= PacketArrivalHandler;
+                }
             }
-            _devices = null;
         }
 
-        public event Action<string> Warning;
-
-        protected virtual void OnWarning(string obj)
+        protected virtual void OnWarning(string message)
         {
-            Warning?.Invoke(obj);
+            Warning?.Invoke(message);
         }
 
-        void device_OnPacketArrival(object sender, PacketCapture e)
+        private void PacketArrivalHandler(object sender, PacketCapture e)
         {
-            var linkPacket = Packet.ParsePacket(e.GetPacket().LinkLayerType, e.GetPacket().Data);
+            IPv4Packet ipPacket;
+            try
+            {
+                var packet = e.GetPacket();
+                if (packet.LinkLayerType != LinkLayers.Null)
+                {
+                    var linkPacket = Packet.ParsePacket(packet.LinkLayerType, packet.Data);
+                    ipPacket = linkPacket.PayloadPacket as IPv4Packet;
+                }
+                else
+                {
+                    ipPacket = new IPv4Packet(new ByteArraySegment(packet.Data, 4, packet.Data.Length - 4));
+                }
+                if (ipPacket == null)
+                    return;
+            }
+            catch
+            {
+                // ignored bad packet
+                return;
+            }
 
-            var ipPacket = linkPacket.PayloadPacket as IPPacket;
-            if (ipPacket == null)
+            OnPacketReceived(ipPacket);
+
+            var now = DateTime.UtcNow;
+            if (now <= _nextCheck)
                 return;
 
-            var ipData = ipPacket.BytesSegment;
-            var ipData2 = new ArraySegment<byte>(ipData.Bytes, ipData.Offset, ipData.Length);
+            _nextCheck = now + TimeSpan.FromSeconds(20);
 
-            OnPacketReceived(ipData2);
+            var device = e.Device;
+            if (device.Statistics.DroppedPackets == _droppedPackets &&
+                device.Statistics.InterfaceDroppedPackets == _interfaceDroppedPackets)
+                return;
 
-            var device = (LibPcapLiveDevice)sender;
-            if (device.Statistics.DroppedPackets != _droppedPackets || device.Statistics.InterfaceDroppedPackets != _interfaceDroppedPackets)
-            {
-                _droppedPackets = device.Statistics.DroppedPackets;
-                _interfaceDroppedPackets = device.Statistics.InterfaceDroppedPackets;
-                OnWarning(string.Format("DroppedPackets {0}, InterfaceDroppedPackets {1}", device.Statistics.DroppedPackets, device.Statistics.InterfaceDroppedPackets));
-            }
+            _droppedPackets = device.Statistics.DroppedPackets;
+            _interfaceDroppedPackets = device.Statistics.InterfaceDroppedPackets;
+            OnWarning($"DroppedPackets {device.Statistics.DroppedPackets}, InterfaceDroppedPackets {device.Statistics.InterfaceDroppedPackets}, ReceivedPackets {device.Statistics.ReceivedPackets}");
         }
     }
 }

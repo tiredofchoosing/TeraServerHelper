@@ -1,89 +1,102 @@
-﻿// Copyright (c) CodesInChaos
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-using System.Diagnostics;
-using NetworkSniffer.Packets;
+﻿using System.Collections.Concurrent;
+using PacketDotNet;
 
 namespace NetworkSniffer
 {
     public class TcpSniffer
     {
-        public string TcpLogFile { get; set; }
-        private readonly object _lock = new object();
+        private readonly ConcurrentDictionary<ConnectionId, (TcpConnection, object)> _connections = new();
+        //private readonly object _lock = new object();
+        private readonly IpSniffer _ipSniffer;
 
-        public event Action<TcpConnection> NewConnection;
-        public event Action<TcpConnection> EndConnection;
+        public event Action<TcpConnection>? NewConnection;
+        public event Action<TcpConnection>? EndConnection;
+
+        public TcpSniffer(IpSniffer ipSniffer)
+        {
+            _ipSniffer = ipSniffer;
+            _ipSniffer.PacketReceived += Receive;
+        }
 
         protected void OnNewConnection(TcpConnection connection)
         {
             NewConnection?.Invoke(connection);
         }
+
         protected void OnEndConnection(TcpConnection connection)
         {
             EndConnection?.Invoke(connection);
         }
 
-        private readonly Dictionary<ConnectionId, TcpConnection> _connections = new Dictionary<ConnectionId, TcpConnection>();
-
-        private void Receive(ArraySegment<byte> ipData)
+        internal void RemoveConnection(TcpConnection connection)
         {
-            var ipPacket = new Ip4Packet(ipData);
-            var protocol = ipPacket.Protocol;
-            if (protocol != IpProtocol.Tcp)
-                return;
-            var tcpPacket = new TcpPacket(ipPacket.Payload);
-
-            bool isFirstPacket = (tcpPacket.Flags & TcpFlags.Syn) != 0;
-            bool isFinishPacket = (tcpPacket.Flags & (TcpFlags.Fin | TcpFlags.Rst)) != 0;
-            var connectionId = new ConnectionId(ipPacket.SourceIp, tcpPacket.SourcePort, ipPacket.DestinationIp, tcpPacket.DestinationPort);
-
-            lock (_lock)
-            {
-                TcpConnection connection;
-                bool isInterestingConnection;
-                if (isFirstPacket)
-                {
-                    connection = new TcpConnection(connectionId, tcpPacket.SequenceNumber);
-                    OnNewConnection(connection);
-                    isInterestingConnection = connection.HasSubscribers;
-                    if (!isInterestingConnection)
-                        return;
-                    _connections[connectionId] = connection;
-                    //Debug.Assert(tcpPacket.Payload.Count == 0);
-                }
-                else if (isFinishPacket)
-                {
-                    isInterestingConnection = _connections.TryGetValue(connectionId, out connection);
-                    if (!isInterestingConnection)
-                        return;
-
-                    _connections.Remove(connectionId);
-                    OnEndConnection(connection);
-                }
-                else
-                {
-                    isInterestingConnection = _connections.TryGetValue(connectionId, out connection);
-                    if (!isInterestingConnection)
-                        return;
-
-                    if (!string.IsNullOrEmpty(TcpLogFile))
-                        File.AppendAllText(TcpLogFile, string.Format("{0} {1}+{4} | {2} {3}+{4} ACK {5} ({6})\r\n",
-                            connection.CurrentSequenceNumber,
-                            tcpPacket.SequenceNumber,
-                            connection.BytesReceived,
-                            connection.SequenceNumberToBytesReceived(tcpPacket.SequenceNumber),
-                            tcpPacket.Payload.Count,
-                            tcpPacket.AcknowledgementNumber,
-                            connection.BufferedPacketDescription));
-
-                    connection.HandleTcpReceived(tcpPacket.SequenceNumber, tcpPacket.Payload);
-                }
-            }
+            _connections.TryRemove(connection.ConnectionId, out var temp);
         }
 
-        public TcpSniffer(IpSniffer ipSniffer)
+        private void Receive(IPv4Packet ipData)
         {
-            ipSniffer.PacketReceived += Receive;
+            if (ipData.PayloadPacket is not TcpPacket tcpPacket || tcpPacket.DataOffset * 4 > ipData.PayloadLength)
+                return;
+
+            // Ack-only packets aren't interesting
+            var isAckOnly = tcpPacket.Flags == TcpFields.TCPAckMask;
+            if (isAckOnly)
+                return;
+
+            var isSync = tcpPacket.Synchronize;
+            var isFinOrRst = tcpPacket.Finished || tcpPacket.Reset;
+            var connectionId = new ConnectionId(ipData.SourceAddress, tcpPacket.SourcePort, ipData.DestinationAddress, tcpPacket.DestinationPort);
+
+            if (isSync)
+            {
+                return;
+                var connection = new TcpConnection(connectionId, tcpPacket.SequenceNumber, RemoveConnection);
+                OnNewConnection(connection);
+
+                if (!connection.HasSubscribers)
+                    return;
+
+                _connections[connectionId] = (connection, new object());
+            }
+            else
+            {
+                return;
+                if (!_connections.TryGetValue(connectionId, out var connectionData))
+                    return;
+
+                (TcpConnection? connection, object locker) = connectionData;
+
+                if (isFinOrRst)
+                {
+                    OnEndConnection(connection);
+
+                    if (_connections.TryGetValue(connection.ConnectionId.Reverse, out var reverse))
+                    {
+                        OnEndConnection(reverse.Item1);
+                    }
+
+                    Task.Run(() => { Task.Delay(1000); GC.Collect(); });
+                    return;
+                }
+
+                byte[] payload;
+                try
+                {
+                    payload = tcpPacket.PayloadData;
+                }
+                catch
+                {
+                    return;
+                }
+
+                if (payload == null || payload.Length == 0)
+                    return;
+
+                lock (locker)
+                {
+                    connection.HandleTcpReceived(tcpPacket.SequenceNumber, payload);
+                }
+            }
         }
     }
 }
