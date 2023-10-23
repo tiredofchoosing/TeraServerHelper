@@ -12,7 +12,7 @@ namespace TeraPartyMonitor.MessageProcessor
         protected TeraDataPools DataPools { get; init; }
         protected NLog.ILogger Logger { get; init; }
 
-        public event Action MessageProcessed;
+        public event Action? MessageProcessed;
 
         public TeraMessageProcessor(ParsedMessage message, Client client, TeraDataPools dataPools, NLog.ILogger logger)
         {

@@ -55,8 +55,6 @@ namespace TeraCore.Game.Messages
                 var name = reader.ReadTeraString();
                 Profiles.Add(new MatchingProfile(name, isLeader, role));
             }
-
-            reader.Close();
         }
 
         public MatchingTypes MatchingType { get; init; }

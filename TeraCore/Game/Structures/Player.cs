@@ -4,6 +4,8 @@ namespace TeraCore.Game.Structures
 {
     public class Player
     {
+        [JsonIgnore]
+        public ulong EntityId { get; set; }
         public uint PlayerId { get; init; }
         public string Name { get; init; }
         public int Level { get; set; }
@@ -17,8 +19,9 @@ namespace TeraCore.Game.Structures
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public PlayerGender Gender { get; init; }
 
-        public Player(uint playerId, string name, int level, PlayerClass playerClass, PlayerRace race, PlayerGender gender)
+        public Player(ulong entity, uint playerId, string name, int level, PlayerClass playerClass, PlayerRace race, PlayerGender gender)
         {
+            EntityId = entity;
             PlayerId = playerId;
             Name = name;
             Level = level;

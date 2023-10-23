@@ -14,6 +14,9 @@ namespace TeraPartyMonitor.MessageProcessor
         {
             if (Message is SUserLevelupMessage m)
             {
+                if (Client.CurrentPlayer.EntityId != m.EntityId)
+                    return;
+
                 Client.CurrentPlayer.Level = m.Level;
                 Logger.Debug($"{Client}|Player level up: {Client.CurrentPlayer}.");
             }

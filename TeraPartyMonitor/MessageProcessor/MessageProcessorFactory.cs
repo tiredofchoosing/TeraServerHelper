@@ -22,10 +22,11 @@ namespace TeraPartyMonitor.MessageProcessor
             {
                 SLoginMessage => new SLoginProcessor(message, client, _dataPools, _logger),
                 SReturnToLobbyMessage => new SReturnToLobbyProcessor(message, client, _dataPools, _logger),
+                SUserLevelupMessage => new SUserLevelupProcessor(message, client, _dataPools, _logger),
+
                 SAddInterPartyMatchPoolMessage => new SAddInterPartyMatchPoolProcessor(message, client, _dataPools, _logger),
                 SDelInterPartyMatchPoolMessage => new SDelInterPartyMatchPoolProcessor(message, client, _dataPools, _logger),
                 SModifyInterPartyMatchPoolMessage => new SModifyInterPartyMatchPoolProcessor(message, client, _dataPools, _logger),
-                SUserLevelupMessage => new SUserLevelupProcessor(message, client, _dataPools, _logger),
 
                 CRegisterPartyInfoMessage => new CRegisterPartyInfoProcessor(message, client, _dataPools, _logger),
                 CUnregisterPartyInfoMessage => new CUnregisterPartyInfoProcessor(message, client, _dataPools, _logger),

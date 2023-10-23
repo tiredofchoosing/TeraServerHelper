@@ -10,9 +10,9 @@ namespace TeraCore.Game.Messages
             int nameOffset = reader.ReadInt16();
             reader.Skip(8);
             int raceGenderClass = reader.ReadInt32();
-            //Id = reader.ReadEntityId();
+            EntityId = reader.ReadUInt64();
             //ServerId = reader.ReadUInt32();
-            reader.Skip(12);
+            reader.Skip(4);
             PlayerId = reader.ReadUInt32();
             reader.Skip(27);
             Level = reader.ReadInt16();
@@ -23,15 +23,13 @@ namespace TeraCore.Game.Messages
             Class = (PlayerClass)(raceGenderClass % 100);
             Race = (PlayerRace)(raceGenderClass / 200);
             Gender = (PlayerGender)((raceGenderClass % 200) / 100);
-
-            reader.Close();
         }
 
-        //public EntityId Id { get; private set; }
-        //public uint ServerId { get; private set; }
-        public uint PlayerId { get; private set; }
-        public int Level { get; private set; }
-        public string Name { get; private set; }
+        public ulong EntityId { get; init; }
+        //public uint ServerId { get; init; }
+        public uint PlayerId { get; init; }
+        public int Level { get; init; }
+        public string Name { get; init; }
         public PlayerClass Class { get; init; }
         public PlayerRace Race { get; init; }
         public PlayerGender Gender { get; init; }

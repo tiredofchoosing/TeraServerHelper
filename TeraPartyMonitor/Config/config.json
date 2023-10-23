@@ -1,7 +1,10 @@
 {
   "Server": "178.250.154.7:7801",
-  "WebAppUrls": "https://*:55555",
+  "WebAppUrls": "http://*:55555",
   "DungeonsRoute": "/dungeons",
   "BattlegroundsRoute": "/battlegrounds",
-  "PlayersRoute": "/players"
+  "PlayersRoute": "/players",
+  "PcapDevicesNames": [
+    "Wi-Fi 6 AX200 160MHz"
+  ]
 }

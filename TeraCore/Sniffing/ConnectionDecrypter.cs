@@ -1,45 +1,35 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using TeraCore.PacketLog;
+﻿using TeraCore.PacketLog;
 using TeraCore.Sniffing.Crypt;
 
 namespace TeraCore.Sniffing
 {
-    public class ConnectionDecrypter
+    public class ConnectionDecrypter : IDisposable
     {
-        private readonly string _region;
-        private MemoryStream _client = new MemoryStream();
-        private MemoryStream _server = new MemoryStream();
-        private Session _session;
+        private readonly MemoryStream _client = new();
+        private readonly MemoryStream _server = new();
+        private Session? _session;
+        private bool _isDisposed = false;
 
-        public ConnectionDecrypter(string region = "Unknown")
-        {
-            _region = region;
-        }
+        public event Action<byte[]>? ClientToServerDecrypted;
+        public event Action<byte[]>? ServerToClientDecrypted;
 
         public bool Initialized => _session != null;
 
-        public event Action<byte[]> ClientToServerDecrypted;
-        public event Action<byte[]> ServerToClientDecrypted;
-
         protected virtual void OnClientToServerDecrypted(byte[] data)
         {
-            var action = ClientToServerDecrypted;
-            action?.Invoke(data);
+            ClientToServerDecrypted?.Invoke(data);
         }
 
         protected virtual void OnServerToClientDecrypted(byte[] data)
         {
-            var action = ServerToClientDecrypted;
-            action?.Invoke(data);
+            ServerToClientDecrypted?.Invoke(data);
         }
 
         private void TryInitialize()
         {
             if (Initialized)
                 throw new InvalidOperationException("Already initalized");
+
             if (_client.Length < 256 + 4 || _server.Length < 256 + 4)
                 return;
 
@@ -62,33 +52,34 @@ namespace TeraCore.Sniffing
 
             if (checkNew[2] == 0xbc && checkNew[3] == 0x4d)
             {
-                _session = session;
                 OnClientToServerDecrypted(checkNew);
+                _session = session;
             }
             else
                 throw new FormatException("Failed to decrypt");
 
-            ClientToServer(_client.ReadBytes((int) (_client.Length - _client.Position)));
-            ServerToClient(_server.ReadBytes((int) (_server.Length - _server.Position)));
+            ClientToServer(_client.ReadBytes((int)(_client.Length - _client.Position)));
+            ServerToClient(_server.ReadBytes((int)(_server.Length - _server.Position)));
 
-            _client.Close();
-            _server.Close();
+            Dispose();
         }
 
         public void Skip(MessageDirection direction, int needToSkip)
         {
-            if (needToSkip > 0)
+            if (Initialized && needToSkip > 0)
             {
-                if (direction == MessageDirection.ServerToClient)
+                var skip = new byte[needToSkip];
+                switch (direction)
                 {
-                    var skip = new byte[needToSkip];
-                    _session.Encrypt(skip);
-                }
-                else
-                {
-                    var skip = new byte[needToSkip];
-                    _session.Decrypt(skip);
-                }
+                    case MessageDirection.ServerToClient:
+                        _session.Encrypt(skip);
+                        break;
+                    case MessageDirection.ClientToServer:
+                        _session.Decrypt(skip);
+                        break;
+                    default:
+                        return;
+                };
             }
         }
 
@@ -130,6 +121,16 @@ namespace TeraCore.Sniffing
             {
                 _server.Write(data, 0, data.Length);
                 TryInitialize();
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!_isDisposed)
+            {
+                _client.Dispose();
+                _server.Dispose();
+                _isDisposed = true;
             }
         }
     }

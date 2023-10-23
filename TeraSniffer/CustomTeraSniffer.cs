@@ -12,27 +12,26 @@ namespace TeraSniffing
         private readonly object _eventLock = new object();
 
         private readonly CustomServer _server;
-        private readonly HashSet<TcpConnection> _isNew = new HashSet<TcpConnection>();
-        private readonly Dictionary<IPEndPoint, CustomConnectionDecrypter> _decrypters = new();
-        private readonly Dictionary<IPEndPoint, CustomMessageSplitter> _messageSplitters = new();
-        private readonly Dictionary<IPEndPoint, Client> _clients = new();
+        private readonly TcpSniffer _tcpSniffer;
         private readonly IpSnifferWinPcap _ipSniffer;
+        private readonly HashSet<TcpConnection> _isNew = new();
+        private readonly Dictionary<IPEndPoint, ClientData> _clientsData = new();
 
-        public event Action<string> Warning;
-        public event Action<Client> NewClientConnection;
-        public event Action<Client> EndClientConnection;
-        public event Action<Message, Client> MessageClientReceived;
+        public event Action<string>? Warning;
+        public event Action<Client>? NewClientConnection;
+        public event Action<Client>? EndClientConnection;
+        public event Action<Message, Client>? MessageClientReceived;
 
-        public CustomTeraSniffer(CustomServer server)
+        public CustomTeraSniffer(CustomServer server, IEnumerable<string>? pcapDeviceFilters = null)
         {
             _server = server;
             var filter = $"tcp and host {server.EndPoint.Address} and port {server.EndPoint.Port}";
 
-            _ipSniffer = new IpSnifferWinPcap(filter);
+            _ipSniffer = new IpSnifferWinPcap(filter, pcapDeviceFilters);
             _ipSniffer.Warning += OnWarning;
-            var tcpSniffer = new TcpSniffer(_ipSniffer);
-            tcpSniffer.NewConnection += HandleNewConnection;
-            tcpSniffer.EndConnection += HandleEndConnection;
+            _tcpSniffer = new TcpSniffer(_ipSniffer);
+            _tcpSniffer.NewConnection += HandleNewConnection;
+            _tcpSniffer.EndConnection += HandleEndConnection;
         }
 
         protected virtual void OnNewClientConnection(Client client)
@@ -47,8 +46,8 @@ namespace TeraSniffing
 
         protected virtual void OnMessageClientReceived(Message message, IPEndPoint clientEndPoint)
         {
-            var client = _clients[clientEndPoint];
-            MessageClientReceived?.Invoke(message, client);
+            var clientData = _clientsData[clientEndPoint];
+            MessageClientReceived?.Invoke(message, clientData.Client);
         }
 
         // IpSniffer has its own locking, so we need no lock here.
@@ -63,9 +62,9 @@ namespace TeraSniffing
             return _ipSniffer.Status();
         }
 
-        protected virtual void OnWarning(string obj)
+        protected virtual void OnWarning(string message)
         {
-            Warning?.Invoke(obj);
+            Warning?.Invoke(message);
         }
 
         // called from the tcp sniffer, so it needs to lock
@@ -95,69 +94,91 @@ namespace TeraSniffing
                 if (_server.EndPoint.Equals(src) || _server.EndPoint.Equals(dst))
                     connection.DataReceived -= HandleTcpDataReceived;
 
-                if (!_server.EndPoint.Equals(src))
-                    return;
-
                 var clientEndPoint = GetClientEndPoint(connection);
-                var client = _clients[clientEndPoint];
-                _clients.Remove(clientEndPoint);
-
-                if (_decrypters.ContainsKey(clientEndPoint))
+                if (_clientsData.TryGetValue(clientEndPoint, out var clientData))
                 {
-                    _decrypters[clientEndPoint].CustomClientToServerDecrypted -= HandleClientToServerDecrypted;
-                    _decrypters[clientEndPoint].CustomServerToClientDecrypted -= HandleServerToClientDecrypted;
-                    _decrypters.Remove(clientEndPoint);
-                }
-                if (_messageSplitters.ContainsKey(clientEndPoint))
-                {
-                    _messageSplitters[clientEndPoint].MessageClientReceived -= HandleMessageClientReceived;
-                    _messageSplitters.Remove(clientEndPoint);
-                }
+                    _clientsData.Remove(clientEndPoint);
 
-                OnEndClientConnection(client);
-                GC.Collect();
+                    if (clientData.ConnectionDecrypter != null)
+                    {
+                        clientData.ConnectionDecrypter.CustomClientToServerDecrypted -= HandleClientToServerDecrypted;
+                        clientData.ConnectionDecrypter.CustomServerToClientDecrypted -= HandleServerToClientDecrypted;
+                    }
+                    if (clientData.MessageSplitter != null)
+                    {
+                        clientData.MessageSplitter.MessageClientReceived -= HandleMessageClientReceived;
+                    }
+                    clientData.ServerToClient.RemoveCallback();
+                    OnEndClientConnection(clientData.Client);
+                    clientData.Dispose();
+                }
+                else
+                    connection.RemoveCallback();
             }
         }
 
         // called from the tcp sniffer, so it needs to lock
-        void HandleTcpDataReceived(TcpConnection connection, ArraySegment<byte> data)
+        void HandleTcpDataReceived(TcpConnection connection, byte[] data, int needToSkip)
         {
             lock (_eventLock)
             {
-                if (data.Count == 0)
-                    return;
-
                 var clientEndPoint = GetClientEndPoint(connection);
+
+                if (data.Length == 0)
+                {
+                    var exist = _clientsData.TryGetValue(clientEndPoint, out var clientData);
+                    if (needToSkip == 0 || !exist)
+                        return;
+
+                    clientData.ConnectionDecrypter.Skip(connection == clientData.ClientToServer ? MessageDirection.ClientToServer : MessageDirection.ServerToClient, needToSkip);
+                    return;
+                }
 
                 if (_isNew.Remove(connection))
                 {
                     if (_server.EndPoint.Equals(connection.Source) &&
-                        data.Array.Skip(data.Offset).Take(4).SequenceEqual(new byte[] { 1, 0, 0, 0 }))
+                        data.Take(4).SequenceEqual(new byte[] { 1, 0, 0, 0 }))
                     {
                         var client = new Client(clientEndPoint);
-                        _clients.Add(clientEndPoint, client);
 
                         var decrypter = new CustomConnectionDecrypter(clientEndPoint);
                         decrypter.CustomClientToServerDecrypted += HandleClientToServerDecrypted;
                         decrypter.CustomServerToClientDecrypted += HandleServerToClientDecrypted;
-                        _decrypters.Add(clientEndPoint, decrypter);
 
                         var messageSplitter = new CustomMessageSplitter(clientEndPoint);
                         messageSplitter.MessageClientReceived += HandleMessageClientReceived;
-                        _messageSplitters.Add(clientEndPoint, messageSplitter);
 
-                        OnNewClientConnection(client);
+                        var clientData = new ClientData()
+                        {
+                            Client = client,
+                            ConnectionDecrypter = decrypter,
+                            MessageSplitter = messageSplitter,
+                            ServerToClient = connection
+                        };
+                        _clientsData.Add(clientEndPoint, clientData);
                     }
+                    if (_clientsData.TryGetValue(clientEndPoint, out var clientData1) &&
+                        clientData1.ClientToServer == null && clientData1.ServerToClient != connection)
+                    {
+                        clientData1.ClientToServer = connection;
+                        OnNewClientConnection(clientData1.Client);
+                    }
+                    //if received more bytes but still not recognized - not interesting.
+                    //if (connection.BytesReceived > 0x10000)
+                    //{
+                    //    connection.DataReceived -= HandleTcpDataReceived;
+                    //    connection.RemoveCallback();
+                    //}
                 }
 
-                if (!_clients.ContainsKey(clientEndPoint))
+                if (!_clientsData.ContainsKey(clientEndPoint))
                     return;
 
-                var dataArray = data.Array.Skip(data.Offset).Take(data.Count).ToArray();
+                var dec = _clientsData[clientEndPoint].ConnectionDecrypter;
                 if (connection.Destination.Equals(_server.EndPoint))
-                    _decrypters[clientEndPoint].ClientToServer(dataArray);
+                    dec.ClientToServer(data, needToSkip);
                 else
-                    _decrypters[clientEndPoint].ServerToClient(dataArray);
+                    dec.ServerToClient(data, needToSkip);
             }
         }
 
@@ -170,24 +191,41 @@ namespace TeraSniffing
         // called indirectly from HandleTcpDataReceived, so the current thread already holds the lock
         void HandleServerToClientDecrypted(IPEndPoint client, byte[] data)
         {
-            if (!_messageSplitters.ContainsKey(client))
+            if (!_clientsData.ContainsKey(client))
                 return;
 
-            _messageSplitters[client].ServerToClient(DateTime.UtcNow, data);
+            var splitter = _clientsData[client].MessageSplitter;
+            splitter.ServerToClient(DateTime.UtcNow, data);
         }
 
         // called indirectly from HandleTcpDataReceived, so the current thread already holds the lock
         void HandleClientToServerDecrypted(IPEndPoint client, byte[] data)
         {
-            if (!_messageSplitters.ContainsKey(client))
+            if (!_clientsData.ContainsKey(client))
                 return;
 
-            _messageSplitters[client].ClientToServer(DateTime.UtcNow, data);
+            var splitter = _clientsData[client].MessageSplitter;
+            splitter.ClientToServer(DateTime.UtcNow, data);
         }
 
         private IPEndPoint GetClientEndPoint(TcpConnection connection)
         {
             return _server.EndPoint.Equals(connection.Source) ? connection.Destination : connection.Source;
+        }
+    }
+
+    class ClientData : IDisposable
+    {
+        public Client Client { get; init; }
+        public CustomConnectionDecrypter ConnectionDecrypter { get; init; }
+        public CustomMessageSplitter MessageSplitter { get; init; }
+        public TcpConnection ServerToClient { get; init; }
+        public TcpConnection? ClientToServer { get; set; }
+
+        public void Dispose()
+        {
+            MessageSplitter.Dispose();
+            ConnectionDecrypter.Dispose();
         }
     }
 }

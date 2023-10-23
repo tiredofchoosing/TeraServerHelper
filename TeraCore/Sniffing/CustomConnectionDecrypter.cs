@@ -1,5 +1,4 @@
-﻿using NetworkSniffer;
-using System.Net;
+﻿using System.Net;
 
 namespace TeraCore.Sniffing
 {
@@ -7,10 +6,10 @@ namespace TeraCore.Sniffing
     {
         private readonly IPEndPoint _client;
 
-        public event Action<IPEndPoint, byte[]> CustomClientToServerDecrypted;
-        public event Action<IPEndPoint, byte[]> CustomServerToClientDecrypted;
+        public event Action<IPEndPoint, byte[]>? CustomClientToServerDecrypted;
+        public event Action<IPEndPoint, byte[]>? CustomServerToClientDecrypted;
 
-        public CustomConnectionDecrypter(IPEndPoint client, string region = "Unknown") : base()
+        public CustomConnectionDecrypter(IPEndPoint client) : base()
         {
             _client = client;
         }

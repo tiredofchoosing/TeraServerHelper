@@ -29,7 +29,7 @@ namespace TeraPartyMonitor.MessageProcessor
                     }
                 }
 
-                player = new Player(m.PlayerId, m.Name, m.Level, m.Class, m.Race, m.Gender);
+                player = new Player(m.EntityId, m.PlayerId, m.Name, m.Level, m.Class, m.Race, m.Gender);
                 DataPools.Add(player);
                 Client.CurrentPlayer = player;
                 Logger.Debug($"{Client}|Player login: {player}.");

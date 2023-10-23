@@ -2,7 +2,7 @@
 {
     public interface ITeraMessageProcessor
     {
-        public event Action MessageProcessed;
+        public event Action? MessageProcessed;
         public void Process();
     }
 }

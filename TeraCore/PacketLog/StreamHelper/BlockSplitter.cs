@@ -1,24 +1,17 @@
 ﻿// Copyright (c) Gothos
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-
 namespace TeraCore.PacketLog
 {
-    internal class BlockSplitter
+    internal class BlockSplitter : IDisposable
     {
-        private readonly MemoryStream _buffer = new MemoryStream();
-        public event Action<byte[]> BlockFinished;
+        private readonly MemoryStream _buffer = new();
         private volatile int _last;
         private volatile int _prev;
         private volatile int _pPrev;
-        public event Action<int, int> Resync;
 
-        ~BlockSplitter()
-        {
-            _buffer.Close();
-        }
+        public event Action<byte[]>? BlockFinished;
+        public event Action<int, int>? Resync;
 
         protected virtual void OnBlockFinished(byte[] block)
         {
@@ -31,7 +24,7 @@ namespace TeraCore.PacketLog
             stream.SetLength(stream.Length - count);
         }
 
-        private static byte[] PopBlock(MemoryStream stream)
+        private static byte[]? PopBlock(MemoryStream stream)
         {
             if (stream.Length < 4) //can't be less than size+opcode
                 return null;
@@ -45,7 +38,7 @@ namespace TeraCore.PacketLog
             return block;
         }
 
-        public byte[] PopBlock()
+        public byte[]? PopBlock()
         {
             var block = PopBlock(_buffer);
             if (block != null)
@@ -60,7 +53,7 @@ namespace TeraCore.PacketLog
             var size = _last + _prev + _pPrev;
             if (size < 400 && _buffer.Length > size)
             {
-                var toSkip = (int) _buffer.Length - _last - _prev;
+                var toSkip = (int)_buffer.Length - _last - _prev;
                 var buffer = _buffer.GetBuffer();
                 var blockSize = buffer[0] | buffer[1] << 8;
                 RemoveFront(_buffer, toSkip);
@@ -77,6 +70,11 @@ namespace TeraCore.PacketLog
             _prev = _last;
             _last = data.Length;
             _buffer.Write(data, 0, data.Length);
+        }
+
+        public void Dispose()
+        {
+            _buffer.Dispose();
         }
     }
 }

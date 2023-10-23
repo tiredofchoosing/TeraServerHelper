@@ -2,11 +2,14 @@
 
 namespace TeraCore.Sniffing
 {
-    public class MessageSplitter
+    public class MessageSplitter : IDisposable
     {
-        private readonly BlockSplitter _clientSplitter = new BlockSplitter();
-        private readonly BlockSplitter _serverSplitter = new BlockSplitter();
+        private readonly BlockSplitter _clientSplitter = new();
+        private readonly BlockSplitter _serverSplitter = new();
         private DateTime _time;
+
+        public event Action<Message>? MessageReceived;
+        public event Action<MessageDirection, int, int>? Resync;
 
         public MessageSplitter()
         {
@@ -15,17 +18,6 @@ namespace TeraCore.Sniffing
             _clientSplitter.Resync += ClientResync;
             _serverSplitter.Resync += ServerResync;
         }
-
-        ~MessageSplitter()
-        {
-            _clientSplitter.BlockFinished -= ClientBlockFinished;
-            _serverSplitter.BlockFinished -= ServerBlockFinished;
-            _clientSplitter.Resync -= ClientResync;
-            _serverSplitter.Resync -= ServerResync;
-        }
-
-        public event Action<Message> MessageReceived;
-        public event Action<MessageDirection, int, int> Resync;
 
         private void ClientResync(int skipped, int size)
         {
@@ -70,6 +62,17 @@ namespace TeraCore.Sniffing
             _time = time;
             _serverSplitter.Data(data);
             _serverSplitter.PopAllBlocks();
+        }
+
+        public void Dispose()
+        {
+            _clientSplitter.Dispose();
+            _serverSplitter.Dispose();
+
+            _clientSplitter.BlockFinished -= ClientBlockFinished;
+            _serverSplitter.BlockFinished -= ServerBlockFinished;
+            _clientSplitter.Resync -= ClientResync;
+            _serverSplitter.Resync -= ServerResync;
         }
     }
 }

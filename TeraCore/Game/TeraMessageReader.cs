@@ -24,17 +24,6 @@ namespace TeraCore.Game
             OpCodeName = opCodeNamer.GetName(message.OpCode);
         }
 
-        ~TeraMessageReader()
-        {
-            Close();
-        }
-
-        //public EntityId ReadEntityId()
-        //{
-        //    var id = ReadUInt64();
-        //    return new EntityId(id);
-        //}
-
         public void Skip(int count)
         {
             ReadBytes(count);
@@ -52,19 +41,5 @@ namespace TeraCore.Game
                 builder.Append(c);
             }
         }
-
-        //public Vector3f ReadVector3f()
-        //{
-        //    Vector3f result;
-        //    result.X = ReadSingle();
-        //    result.Y = ReadSingle();
-        //    result.Z = ReadSingle();
-        //    return result;
-        //}
-
-        //public Angle ReadAngle()
-        //{
-        //    return new Angle(ReadUInt16());
-        //}
     }
 }

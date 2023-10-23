@@ -8,8 +8,6 @@ namespace TeraCore.Game.Messages
         {
             MatchingType = (MatchingTypes)reader.ReadByte();
             //reader.Skip(2);
-
-            reader.Close();
         }
 
         public MatchingTypes MatchingType { get; init; }
